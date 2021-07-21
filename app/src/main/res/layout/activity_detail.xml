@@ -1,0 +1,63 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    tools:context="com.xjk.epilepsy.DetailActivity">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <Button
+            android:id="@+id/btn_socket"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_margin="10dp"
+            android:background="@drawable/circle_red"
+            android:text="TCP"
+            android:textColor="#F9F9F9"
+            android:textSize="12sp" />
+
+        <Button
+            android:id="@+id/btn_ble"
+            android:layout_width="44dp"
+            android:layout_height="44dp"
+            android:layout_margin="10dp"
+            android:background="@drawable/circle_red"
+            android:text="BLE"
+            android:textColor="#f9f9f9"
+            android:textSize="12sp" />
+    </LinearLayout>
+    <FrameLayout
+        android:id="@+id/fl_content"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1" />
+
+    <RadioGroup
+        android:id="@+id/rg_main"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal">
+        <RadioButton
+            android:id="@+id/btn_v1"
+            style="@style/style_RadioButton"
+            android:text="V1" />
+
+        <RadioButton
+            android:id="@+id/btn_v2"
+            style="@style/style_RadioButton"
+            android:text="V2" />
+
+        <RadioButton
+            android:id="@+id/btn_v3"
+            style="@style/style_RadioButton"
+            android:text="V3" />
+        <RadioButton
+            android:id="@+id/btn_bre"
+            style="@style/style_RadioButton"
+            android:text="呼吸波" />
+    </RadioGroup>
+
+</LinearLayout>
