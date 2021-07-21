@@ -29,6 +29,7 @@ import android.widget.Toast;
 
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.tbruyelle.rxpermissions2.RxPermissions;
+import com.xjk.epilepsy.Utils.GlobalBleDevice;
 import com.xjk.epilepsy.Utils.StatusBarUtil;
 
 import java.lang.reflect.InvocationTargetException;
@@ -44,9 +45,9 @@ import static com.xjk.epilepsy.Utils.StringParse.string2Point;
 public class MainActivity extends Activity implements View.OnClickListener {
     public static final String action="jason.broadcast.action";
     private  static int REQUEST_ENABLE_BLUETOOTH = 1;
-    private  boolean  mIsBound=false;
-    private DataService.MyBinder myBinder;  //代理人
-    private DataService dataService;
+//    private  boolean  mIsBound=false;
+//    private DataService.MyBinder myBinder;  //代理人
+//    private DataService dataService;
     BluetoothAdapter bluetoothAdapter;
     private TextView scanDevices;
     private LinearLayout loadingLay;
@@ -57,8 +58,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
     DeviceAdapter mAdapter;//蓝牙设备适配器
     List<BluetoothDevice> deviceList = new ArrayList<>();//储存蓝牙设备
     private  TextView scanBtn;
-    private  String data2draw;
-    private boolean isConOK=false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -77,10 +76,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
         super.onStart();
         //绑定服务获取中间人
-        Intent intent = new Intent(MainActivity.this, DataService.class);
-        //conn 通讯频道， BIND_AUTO_CREATE如果服务不存在，会把服务创建出来
-        boolean ans=bindService(intent,conn,BIND_AUTO_CREATE);
-        Log.e(TAG,"绑定服务的结果："+String.valueOf(ans));
+//        Intent intent = new Intent(MainActivity.this, DataService.class);
+//        //conn 通讯频道， BIND_AUTO_CREATE如果服务不存在，会把服务创建出来
+//        boolean ans=bindService(intent,conn,BIND_AUTO_CREATE);
+//        Log.e(TAG,"绑定服务的结果："+String.valueOf(ans));
     }
 
 
@@ -179,42 +178,10 @@ public class MainActivity extends Activity implements View.OnClickListener {
         }
         else if(requestCode==99){
             if(resultCode==99)
-            {doDisCon();}
+            {showMsg("请重新搜索设备");}
         }
     }
-    private  ServiceConnection conn = new ServiceConnection(){
-        @Override
-        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-            // 在Activity得到了服务返回的代理人对象，IBinder
-            myBinder = (DataService.MyBinder) iBinder;
-            dataService=myBinder.getService();
-            mIsBound=true;
-            Log.e(TAG,"绑定服务成功");
-            dataService.setCallBack(new DataService.CallBack() {
 
-                @Override
-                public void onStateChanged(boolean socState,boolean bleState) {
-                    Log.e(TAG,"收到tcp状态："+String.valueOf(socState));
-                    Log.e(TAG,"收到ble状态："+String.valueOf(bleState));
-                    if(bleState==true){
-                        isConOK=true;
-                    }else{
-                        isConOK=false;
-                    }
-                    Intent intent=new Intent(action);
-                    intent.putExtra("ble",String.valueOf(isConOK));
-                    intent.putExtra("soc",String.valueOf(socState));
-                    sendBroadcast(intent);
-                }
-            });
-        }
-        //当服务失去连接时调用的方法
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            mIsBound=false;
-            Log.e(TAG,"失去服务");
-        }
-    };
     private class BluetoothReceiver extends BroadcastReceiver {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -264,17 +231,18 @@ public class MainActivity extends Activity implements View.OnClickListener {
                     Log.i(TAG,"想要连接的蓝牙装置是"+tempdevice.getName());
                     createOrRemoveBond(1,tempdevice);
                     //TODO,初始化TCP连接
-                    //蓝牙连接设备
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            SystemClock.sleep(100);
-                            myBinder.connectSoc(); //连接TCP服务器
-                            SystemClock.sleep(100);
-                            myBinder.connectDev(tempdevice); //连接蓝牙设备
-                        }
-                    }).start();
+//                    //蓝牙连接设备
+//                    new Thread(new Runnable() {
+//                        @Override
+//                        public void run() {
+//                            SystemClock.sleep(100);
+//                            myBinder.connectSoc(); //连接TCP服务器
+//                            SystemClock.sleep(100);
+//                            myBinder.connectDev(tempdevice); //连接蓝牙设备
+//                        }
+//                    }).start();
                     Intent in = new Intent(MainActivity.this,DetailActivity.class);
+                    ((GlobalBleDevice) getApplication()).setGlobalBlueDevice(tempdevice);
                     startActivityForResult(in,99);
                 }
                 else{
@@ -356,9 +324,8 @@ public class MainActivity extends Activity implements View.OnClickListener {
         builder.setPositiveButton("是的", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
-                doDisCon();
-                Intent intent = new Intent(MainActivity.this, DataService.class);
-                stopService(intent);       //停止服务
+//                Intent intent = new Intent(MainActivity.this, DataService.class);
+//                stopService(intent);       //停止服务
                 MainActivity.this.finish();
             }
         });
@@ -371,12 +338,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
         });
         builder.show();
     }
-    private void doDisCon(){
-        if(myBinder!=null){
-            myBinder.disconnectSoc();
-            myBinder.disconnectDev();
-        }
-        else return;
-    }
+
 
 }

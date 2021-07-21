@@ -1,5 +1,6 @@
 package com.xjk.epilepsy;
 
+import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -20,6 +21,7 @@ import androidx.fragment.app.FragmentTransaction;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.os.SystemClock;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -31,32 +33,34 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import com.xjk.epilepsy.Utils.GlobalBleDevice;
 import com.xjk.epilepsy.Utils.StringParse;
 
 public class DetailActivity extends FragmentActivity {
     private String data2Draw;
+    private final String TAG="详细页面";
     /*倒计时Timer发送心跳包*/
     private Timer timer;
     private TimerTask task;
-    Handler handler=new Handler(){
-        @Override
-        public void handleMessage(@NonNull Message msg) {
-            super.handleMessage(msg);
-            if(msg.what==1){
-                if(StrBuff.length()>2000){
-                    String data= StrBuff.toString();
-                    StrBuff.delete(0,StrBuff.length());
-                    ArrayList<ArrayList<Double>> points=StringParse.string2Point(data);
-                    BRE=points.get(0);
-                    V1=points.get(1);
-                    V2=points.get(2);
-                    V3=points.get(3);
-                    Log.i("详细页面","准备发送数据点");
-                    V1Fragment.onPointChange(V1);
-                }
-            }
-        }
-    };
+//    Handler handler=new Handler(){
+//        @Override
+//        public void handleMessage(@NonNull Message msg) {
+//            super.handleMessage(msg);
+//            if(msg.what==1){
+//                if(StrBuff.length()>2000){
+//                    String data= StrBuff.toString();
+//                    StrBuff.delete(0,StrBuff.length());
+//                    ArrayList<ArrayList<Double>> points=StringParse.string2Point(data);
+//                    BRE=points.get(0);
+//                    V1=points.get(1);
+//                    V2=points.get(2);
+//                    V3=points.get(3);
+//                    Log.i("详细页面","准备发送数据点");
+//                    V1Fragment.onPointChange(V1);
+//                }
+//            }
+//        }
+//    };
     private RadioGroup mRg_main;
     private List<BaseFragment> mBaseFragment;
     private List<BaseFragment> interList;
@@ -83,7 +87,28 @@ public class DetailActivity extends FragmentActivity {
         public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
             myBinder = (DataService.MyBinder) iBinder;
             service=myBinder.getService();
-
+            SystemClock.sleep(100);
+            myBinder.connectSoc(); //连接TCP服务器
+            SystemClock.sleep(100);
+            BluetoothDevice target=((GlobalBleDevice)getApplication()).getGlobalBlueDevice();
+            myBinder.connectDev(target); //连接蓝牙设备
+            service.setCallBack(new DataService.CallBack() {
+                @Override
+                public void onStateChanged(boolean socState, boolean bleState) {
+                    Log.e(TAG,"收到tcp状态："+String.valueOf(socState));
+                    Log.e(TAG,"收到ble状态："+String.valueOf(bleState));
+                    if (bleState == true) {
+                        btn_ble.setBackground(getDrawable(R.drawable.circle_green));
+                    } else {
+                        btn_ble.setBackground(getDrawable(R.drawable.circle_red));
+                    }
+                    if (socState==true){
+                        btn_socket.setBackground(getDrawable(R.drawable.circle_green));
+                    }else {
+                        btn_socket.setBackground(getDrawable(R.drawable.circle_red));
+                    }
+                }
+            });
         }
         //当服务失去连接时调用的方法
         @Override
@@ -91,6 +116,7 @@ public class DetailActivity extends FragmentActivity {
             service=null;
         }
     };
+
     /**
      * 选中的Fragment的对应的位置
      */
@@ -101,6 +127,25 @@ public class DetailActivity extends FragmentActivity {
      * 上次切换的Fragment
      */
     private Fragment mContent;
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        conn =new MyConn();
+        boolean ans=bindService(new Intent(DetailActivity.this,DataService.class),conn,BIND_AUTO_CREATE);
+        Log.e(TAG,"绑定服务的结果："+String.valueOf(ans));
+
+//        new Thread(new Runnable() {
+//            @Override
+//            public void run() {
+//                SystemClock.sleep(100);
+//                myBinder.connectSoc(); //连接TCP服务器
+//                SystemClock.sleep(100);
+//                BluetoothDevice target=((GlobalBleDevice)getApplication()).getGlobalBlueDevice();
+//                myBinder.connectDev(target); //连接蓝牙设备
+//            }
+//        }).start();
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,23 +167,21 @@ public class DetailActivity extends FragmentActivity {
         IntentFilter filter=new IntentFilter(MainActivity.action);
         registerReceiver(broadcastReceiver,filter);
         doRegusterReceiver();
-        conn =new MyConn();
-        bindService(new Intent(DetailActivity.this,DataService.class),conn,BIND_AUTO_CREATE);
 //        sendPoint();
 //        ArrayList<Double> v1=new ArrayList<Double>();
 //        v1.add(1.0);
 //        v1.add(2.0);
 //        V1Fragment.onPointChange(v1);
-        timer=new Timer();
-        task = new TimerTask() {
-            @Override
-            public void run() {
-                Message me=new Message();
-                me.what=1;
-                handler.sendMessage(me);
-            }
-        };
-        timer.schedule(task, 2000);
+//        timer=new Timer();
+//        task = new TimerTask() {
+//            @Override
+//            public void run() {
+//                Message me=new Message();
+//                me.what=1;
+//                handler.sendMessage(me);
+//            }
+//        };
+//        timer.schedule(task, 2000);
     }
     BroadcastReceiver broadcastReceiver=new BroadcastReceiver() {
         //处理状态灯的接收器
@@ -271,6 +314,8 @@ public class DetailActivity extends FragmentActivity {
         builder.setPositiveButton("是的", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
+                myBinder.disconnectSoc();
+                myBinder.disconnectDev();
                 DetailActivity.this.setResult(99);
                 DetailActivity.this.finish();
             }
@@ -294,6 +339,9 @@ public class DetailActivity extends FragmentActivity {
             if (temp != null) {
                StrBuff.append(temp);
                Log.i("缓冲区长度",String.valueOf(StrBuff.length()));
+               if(StrBuff.length()>20000){
+                   StrBuff.delete(0,StrBuff.length());
+               }
             }
         }
     };
