@@ -6,43 +6,43 @@ import java.util.List;
 
 public class StringParse {
     public static final ArrayList<ArrayList<Double>> string2Point(String data) {
-        if(data.length()<286)
+        if(data.length()<264)
         {
             return null;
         }
-        List<String> ecgstrList=getStrList(data,286);
+        List<String> ecgstrList=getStrList(data,264);
         ArrayList<Double> V1=new ArrayList<Double>();
         ArrayList<Double> V2=new ArrayList<Double>();
         ArrayList<Double> V3=new ArrayList<Double>();
         ArrayList<Double> BRE=new ArrayList<Double>();
         ArrayList<ArrayList<Double>> ans=new ArrayList<ArrayList<Double>>();
         for(String ecgStr : ecgstrList){
-            if(ecgStr.length()<286)
+            if(ecgStr.length()<264)
             {
                 break;
             }
-            String pureData=ecgStr.substring(22);
-            int len=pureData.length();
-            String ecg4Channel=pureData.substring(0,240);
+            String ecg4Channel=ecgStr.substring(0,240);
             int len2=ecg4Channel.length();
-            String accelerateSpeed=pureData.substring(240);
+            String accelerateSpeed=ecgStr.substring(240);
             int len3=accelerateSpeed.length();
             ArrayList<Double> dataArray=new ArrayList<Double>();
             int index=0;
             for(int i=0;i<40;i++){
                 String point=ecg4Channel.substring(index,index+6);
-                BigInteger bi = new BigInteger(strTo16(point), 16);
-                bi=bi.shiftLeft(8);
-                int pointNumb=bi.intValue();
-                double value=pointNumb/10307920.2816;
+                point=point+"00";
+                Long longstr=Long.parseLong(point,16);
+                int num=new Integer(longstr.intValue());
+                //BigInteger bi = new BigInteger(point, 16);
+                //bi=bi.shiftLeft(8);
+                double value=num/10307920.2816;
                 dataArray.add(value);
                 index+=6;
             }
-            for (int j=0;j<40;j++){
+            for (int j=0;j<40;j+=4){
                 BRE.add(dataArray.get(j));
                 V1.add(dataArray.get(j+1));
                 V2.add(dataArray.get(j+2));
-                V3.add(dataArray.get(j)+3);
+                V3.add(dataArray.get(j+3));
             }
         }
         ans.add(BRE);

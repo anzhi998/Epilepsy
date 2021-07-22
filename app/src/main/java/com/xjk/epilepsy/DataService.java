@@ -26,6 +26,7 @@ import com.xjk.epilepsy.Utils.ConvertUtils;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
@@ -224,8 +225,8 @@ public class DataService extends Service {
                     }
                 }
             };
+            timer.schedule(task,0,1000*heartCycle);
         }
-        timer.schedule(task,0,1000*heartCycle);
     }
     // 执行状态更新
     @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
@@ -399,7 +400,7 @@ public class DataService extends Service {
                 @Override
                 public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status) {
                     super.onCharacteristicWrite(gatt, characteristic, status);
-                    printData(characteristic.getValue());      //打印数据发送
+                    //printData(characteristic.getValue());      //打印数据发送
                 }
             });
         }catch (Exception e){
@@ -448,4 +449,5 @@ public class DataService extends Service {
         Log.i(TAG,"广播数据包："+data);
         sendBroadcast(intent);
     }
+
 }

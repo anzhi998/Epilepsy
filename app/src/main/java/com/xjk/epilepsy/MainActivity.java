@@ -178,7 +178,14 @@ public class MainActivity extends Activity implements View.OnClickListener {
         }
         else if(requestCode==99){
             if(resultCode==99)
-            {showMsg("请重新搜索设备");}
+            {
+                if(bluetoothAdapter.isEnabled()){
+                    if(mAdapter !=null){
+                        deviceList.clear();
+                        mAdapter.notifyDataSetChanged();
+                    }
+                }
+            }
         }
     }
 
@@ -226,11 +233,12 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 //单独开一个线程连接蓝牙设备
                 //连接的过程中是否需要开一个等待的dialog？
                 //连接成功后跳转到详情界面
-                final BluetoothDevice tempdevice=deviceList.get(position);//先获取到当前选中的设备
-                if(tempdevice.getName().contains("Bio")){
-                    Log.i(TAG,"想要连接的蓝牙装置是"+tempdevice.getName());
-                    createOrRemoveBond(1,tempdevice);
-                    //TODO,初始化TCP连接
+                try{
+                    final BluetoothDevice tempdevice=deviceList.get(position);//先获取到当前选中的设备
+                    if(tempdevice.getName().contains("Bio")){
+                        Log.i(TAG,"想要连接的蓝牙装置是"+tempdevice.getName());
+                        createOrRemoveBond(1,tempdevice);
+                        //TODO,初始化TCP连接
 //                    //蓝牙连接设备
 //                    new Thread(new Runnable() {
 //                        @Override
@@ -241,13 +249,17 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //                            myBinder.connectDev(tempdevice); //连接蓝牙设备
 //                        }
 //                    }).start();
-                    Intent in = new Intent(MainActivity.this,DetailActivity.class);
-                    ((GlobalBleDevice) getApplication()).setGlobalBlueDevice(tempdevice);
-                    startActivityForResult(in,99);
+                        Intent in = new Intent(MainActivity.this,DetailActivity.class);
+                        ((GlobalBleDevice) getApplication()).setGlobalBlueDevice(tempdevice);
+                        startActivityForResult(in,99);
+                    }
+                    else{
+                        showMsg("不支持该设备");
+                    }
+                }catch (Exception e){
+                    showMsg("请重新搜索设备");
                 }
-                else{
-                    showMsg("不支持该设备");
-                }
+
             }
         });
     }

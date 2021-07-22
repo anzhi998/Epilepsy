@@ -43,21 +43,17 @@
         <RadioButton
             android:id="@+id/btn_v1"
             style="@style/style_RadioButton"
-            android:text="V1" />
+            android:text="三导联" />
 
         <RadioButton
             android:id="@+id/btn_v2"
             style="@style/style_RadioButton"
-            android:text="V2" />
+            android:text="呼吸波" />
 
         <RadioButton
             android:id="@+id/btn_v3"
             style="@style/style_RadioButton"
-            android:text="V3" />
-        <RadioButton
-            android:id="@+id/btn_bre"
-            style="@style/style_RadioButton"
-            android:text="呼吸波" />
+            android:text="加速度" />
     </RadioGroup>
 
 </LinearLayout>

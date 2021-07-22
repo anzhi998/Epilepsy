@@ -49,6 +49,6 @@ public abstract class BaseFragment extends Fragment {
 
     }
 
-    public abstract void onPointChange(ArrayList<Double> point);
+    public abstract void onPointChanged(ArrayList<ArrayList<Double>> point);
 }
 

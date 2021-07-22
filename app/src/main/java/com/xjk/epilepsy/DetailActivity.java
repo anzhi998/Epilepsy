@@ -8,12 +8,16 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.os.Build;
 import android.os.Bundle;
 
 import com.xjk.epilepsy.Fragments.LinechartFragment;
+import com.xjk.epilepsy.Fragments.breFragment;
 import com.xjk.epilepsy.Utils.BaseFragment;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.fragment.app.FragmentTransaction;
@@ -29,38 +33,33 @@ import android.widget.RadioGroup;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import com.xjk.epilepsy.Utils.GlobalBleDevice;
 import com.xjk.epilepsy.Utils.StringParse;
 
 public class DetailActivity extends FragmentActivity {
-    private String data2Draw;
+    private final String HEAD="00AA00CC";
+    private boolean isStartSend=false;
     private final String TAG="详细页面";
-    /*倒计时Timer发送心跳包*/
-    private Timer timer;
-    private TimerTask task;
-//    Handler handler=new Handler(){
-//        @Override
-//        public void handleMessage(@NonNull Message msg) {
-//            super.handleMessage(msg);
-//            if(msg.what==1){
-//                if(StrBuff.length()>2000){
-//                    String data= StrBuff.toString();
-//                    StrBuff.delete(0,StrBuff.length());
-//                    ArrayList<ArrayList<Double>> points=StringParse.string2Point(data);
-//                    BRE=points.get(0);
-//                    V1=points.get(1);
-//                    V2=points.get(2);
-//                    V3=points.get(3);
-//                    Log.i("详细页面","准备发送数据点");
-//                    V1Fragment.onPointChange(V1);
-//                }
-//            }
-//        }
-//    };
+    private final String TRUETYPE="05";
+    private final int DRAW=198;
+    private final int GETPPOINTS=199;
+    //线程池   采用线程池，不用一个个开线程
+    private ScheduledThreadPoolExecutor mThreadPool;
     private RadioGroup mRg_main;
     private List<BaseFragment> mBaseFragment;
     private List<BaseFragment> interList;
@@ -68,12 +67,12 @@ public class DetailActivity extends FragmentActivity {
     public ArrayList<Double> V1;
     public ArrayList<Double> V2;
     public ArrayList<Double> V3;
-    private BaseFragment V1Fragment;
-    private BaseFragment V2Fragment;
-    private BaseFragment V3Fragment;
+    private BaseFragment VFragment;
     private BaseFragment BREFragment;
+    private BaseFragment SPDFragment;
     private DataService service;
-    private StringBuffer StrBuff;
+    private StringBuffer dataBuff;
+    private StringBuffer purePointBuff;
     private ContentReceiver mDataReceiver ;
     private DataService.MyBinder myBinder;  //代理人
     private MyConn conn;
@@ -81,6 +80,9 @@ public class DetailActivity extends FragmentActivity {
         mDataReceiver=new ContentReceiver();
         IntentFilter filter= new IntentFilter("com.xjk.servicecallback.content");
         registerReceiver(mDataReceiver,filter);
+    }
+    public static  interface  myInterface{
+        void onPointChanged(ArrayList<ArrayList<Double>> point);
     }
     public final class MyConn implements ServiceConnection{
         @Override
@@ -135,27 +137,96 @@ public class DetailActivity extends FragmentActivity {
         boolean ans=bindService(new Intent(DetailActivity.this,DataService.class),conn,BIND_AUTO_CREATE);
         Log.e(TAG,"绑定服务的结果："+String.valueOf(ans));
 
-//        new Thread(new Runnable() {
-//            @Override
-//            public void run() {
-//                SystemClock.sleep(100);
-//                myBinder.connectSoc(); //连接TCP服务器
-//                SystemClock.sleep(100);
-//                BluetoothDevice target=((GlobalBleDevice)getApplication()).getGlobalBlueDevice();
-//                myBinder.connectDev(target); //连接蓝牙设备
-//            }
-//        }).start();
     }
+    Runnable task=new Runnable() {
+        @Override
+        public void run() {
+            Message message = new Message();
+            message.what = DRAW;             //触发 handle UI更新线程
+            handler.sendMessage(message);
+            dataBuff.delete(0,dataBuff.length());
+        }
+    };
+    Runnable task_deal=new Runnable() {
+        @Override
+        public void run() {
+            Message me=new Message();
+            me.what=GETPPOINTS;
+            handler.sendMessage(me);
+        }
+    };
+    Runnable task_clean=new Runnable() {
+        @Override
+        public void run() {
+            dataBuff.delete(0,dataBuff.length());
+            Log.i(TAG,"从缓冲区删除数据");
+        }
+    };
+    private Handler handler = new Handler(new Handler.Callback() {
+        @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+        @Override
+        public boolean handleMessage(Message message) {
+            switch (message.what) {
+                case DRAW:
+                    doUpdatePoint();
+                    break;
+                case GETPPOINTS:
+                    String pcg10s=getPCG();
+                    purePointBuff.append(pcg10s);
+                    break;
+                default:
+                    break;
+            }
+            return true;  //false
+        }
+    });
+    private String getPCG(){
+        String PCGStr_10point="";
+        if(dataBuff.length()<2000){
 
+            return "";
+        }
+        String dataString=dataBuff.substring(0,2000);
+        try {
+            int startIndex=dataString.indexOf(HEAD);
+            dataBuff.delete(0,startIndex+16);
+            String type=dataBuff.substring(0,2);
+            if(type.equals(TRUETYPE)){
+                dataBuff.delete(0,6);
+                PCGStr_10point=dataBuff.substring(0,2*132);
+                dataBuff.delete(0,2*132);
+            }else{
+                Log.e(TAG,"收到了其他类型的数据，数据类型:"+type);
+            }
+        }catch (Exception e){
+            Log.e(TAG,"从缓冲区中寻找ecg信号出错");
+        }
+
+        return PCGStr_10point;
+    }
+    private void doUpdatePoint(){
+        if(VFragment!=null){
+            String data2Daw=purePointBuff.toString();
+            if (data2Daw.length()>2*132*120){
+                purePointBuff.delete(0,data2Daw.length());
+                ArrayList<ArrayList<Double>> point=StringParse.string2Point(data2Daw);
+                VFragment.onPointChanged(point);
+                BREFragment.onPointChanged(point);
+            }
+        }
+    }
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        //初始化线程池
+        mThreadPool = new ScheduledThreadPoolExecutor(3);
         setContentView(R.layout.activity_detail);
         BRE=new ArrayList<Double>();
         V1=new ArrayList<Double>();
         V2=new ArrayList<Double>();
         V3=new ArrayList<Double>();
-        StrBuff= new StringBuffer();
+        dataBuff=new StringBuffer();
+        purePointBuff=new StringBuffer();
         //初始化View
         initView();
         //初始化Fragment
@@ -164,46 +235,12 @@ public class DetailActivity extends FragmentActivity {
         setListener();
         btn_ble=(Button)findViewById(R.id.btn_ble);
         btn_socket=(Button)findViewById(R.id.btn_socket);
-        IntentFilter filter=new IntentFilter(MainActivity.action);
-        registerReceiver(broadcastReceiver,filter);
         doRegusterReceiver();
-//        sendPoint();
-//        ArrayList<Double> v1=new ArrayList<Double>();
-//        v1.add(1.0);
-//        v1.add(2.0);
-//        V1Fragment.onPointChange(v1);
-//        timer=new Timer();
-//        task = new TimerTask() {
-//            @Override
-//            public void run() {
-//                Message me=new Message();
-//                me.what=1;
-//                handler.sendMessage(me);
-//            }
-//        };
-//        timer.schedule(task, 2000);
+        mThreadPool.scheduleAtFixedRate(task,3,2,TimeUnit.SECONDS);
+        mThreadPool.scheduleAtFixedRate(task_clean,5,5,TimeUnit.SECONDS);
+        mThreadPool.scheduleAtFixedRate(task_deal,2,50,TimeUnit.MILLISECONDS);
     }
-    BroadcastReceiver broadcastReceiver=new BroadcastReceiver() {
-        //处理状态灯的接收器
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            boolean bleState = Boolean.parseBoolean(intent.getExtras().getString("ble"));
-            boolean socState = Boolean.parseBoolean(intent.getExtras().getString("soc"));
-            if (bleState == true) {
-                btn_ble.setBackground(getDrawable(R.drawable.circle_green));
-            } else {
-                btn_ble.setBackground(getDrawable(R.drawable.circle_red));
-            }
-            if (socState==true){
-                btn_socket.setBackground(getDrawable(R.drawable.circle_green));
-            }else {
-                btn_socket.setBackground(getDrawable(R.drawable.circle_red));
-            }
-        }
-    };
-    public interface ToFragmentListener {
-        void onPointChange(ArrayList<Double> point);
-    }
+
     private BaseFragment getFragment() {
          return mBaseFragment.get(position);
     }
@@ -225,9 +262,6 @@ public class DetailActivity extends FragmentActivity {
                     break;
                 case R.id.btn_v3:
                     position = 2;
-                    break;
-                case R.id.btn_bre:
-                    position=3;
                     break;
                 default:
                     position = 0;
@@ -274,19 +308,15 @@ public class DetailActivity extends FragmentActivity {
     private void initFragment() {
         mBaseFragment = new ArrayList<>();
         interList   =   new ArrayList<>();
-        V1Fragment=LinechartFragment.getInstance();
-        V2Fragment=LinechartFragment.getInstance();
-        V3Fragment=LinechartFragment.getInstance();
-        BREFragment=LinechartFragment.getInstance();
-        mBaseFragment.add(V1Fragment);
-        mBaseFragment.add(V2Fragment);
-        mBaseFragment.add(V3Fragment);
+        VFragment=LinechartFragment.getInstance();
+        BREFragment= breFragment.getInstance();
+        SPDFragment=LinechartFragment.getInstance();
+        mBaseFragment.add(VFragment);
         mBaseFragment.add(BREFragment);
-        interList.add(V1Fragment);
-        interList.add(V2Fragment);
-        interList.add(V3Fragment);
+        mBaseFragment.add(SPDFragment);
+        interList.add(VFragment);
         interList.add(BREFragment);
-
+        interList.add(SPDFragment);
     }
 
     private void initView() {
@@ -296,13 +326,7 @@ public class DetailActivity extends FragmentActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if(timer!=null)
-        {
-            timer.purge();
-            timer.cancel();
-            timer = null;
-        }
-        unregisterReceiver(broadcastReceiver);
+
         unregisterReceiver(mDataReceiver);
         unbindService(conn);
 
@@ -316,6 +340,7 @@ public class DetailActivity extends FragmentActivity {
             public void onClick(DialogInterface dialogInterface, int i) {
                 myBinder.disconnectSoc();
                 myBinder.disconnectDev();
+                mThreadPool.shutdown();
                 DetailActivity.this.setResult(99);
                 DetailActivity.this.finish();
             }
@@ -334,16 +359,9 @@ public class DetailActivity extends FragmentActivity {
         //处理点数据的接收器
         @Override
         public void onReceive(Context context, Intent intent) {
-            String temp = intent.getStringExtra("data");
-            Log.i("详细页面","收到广播数据包:"+temp);
-            if (temp != null) {
-               StrBuff.append(temp);
-               Log.i("缓冲区长度",String.valueOf(StrBuff.length()));
-               if(StrBuff.length()>20000){
-                   StrBuff.delete(0,StrBuff.length());
-               }
-            }
+            String temp=intent.getStringExtra("data");
+            dataBuff.append(temp);
+            Log.i(TAG,"缓冲区添加数据，缓冲区长度为："+String.valueOf(dataBuff.length()));
         }
     };
-
 }
