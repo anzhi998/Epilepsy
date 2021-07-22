@@ -182,11 +182,11 @@ public class DetailActivity extends FragmentActivity {
     });
     private String getPCG(){
         String PCGStr_10point="";
-        if(dataBuff.length()<2000){
+        if(dataBuff.length()<500){
 
             return "";
         }
-        String dataString=dataBuff.substring(0,2000);
+        String dataString=dataBuff.substring(0,500);
         try {
             int startIndex=dataString.indexOf(HEAD);
             dataBuff.delete(0,startIndex+16);
@@ -207,10 +207,12 @@ public class DetailActivity extends FragmentActivity {
     private void doUpdatePoint(){
         if(VFragment!=null){
             String data2Daw=purePointBuff.toString();
-            if (data2Daw.length()>2*132*120){
-                purePointBuff.delete(0,data2Daw.length());
+            if (data2Daw.length()>2*132*100){
+                data2Daw=purePointBuff.substring(0,2*132*100);
+                purePointBuff.delete(0,2*132*100);
                 ArrayList<ArrayList<Double>> point=StringParse.string2Point(data2Daw);
                 VFragment.onPointChanged(point);
+                Log.i(TAG,"重绘折线图");
                 BREFragment.onPointChanged(point);
             }
         }
@@ -236,9 +238,9 @@ public class DetailActivity extends FragmentActivity {
         btn_ble=(Button)findViewById(R.id.btn_ble);
         btn_socket=(Button)findViewById(R.id.btn_socket);
         doRegusterReceiver();
-        mThreadPool.scheduleAtFixedRate(task,3,2,TimeUnit.SECONDS);
-        mThreadPool.scheduleAtFixedRate(task_clean,5,5,TimeUnit.SECONDS);
-        mThreadPool.scheduleAtFixedRate(task_deal,2,50,TimeUnit.MILLISECONDS);
+        mThreadPool.scheduleAtFixedRate(task,3,3,TimeUnit.SECONDS);
+        //mThreadPool.scheduleAtFixedRate(task_clean,5,5,TimeUnit.SECONDS);
+        mThreadPool.scheduleAtFixedRate(task_deal,2,20,TimeUnit.MILLISECONDS);
     }
 
     private BaseFragment getFragment() {

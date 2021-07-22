@@ -12,12 +12,14 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 import lecho.lib.hellocharts.gesture.ZoomType;
 import lecho.lib.hellocharts.model.Axis;
 import lecho.lib.hellocharts.model.Line;
 import lecho.lib.hellocharts.model.LineChartData;
 import lecho.lib.hellocharts.model.PointValue;
+import lecho.lib.hellocharts.model.Viewport;
 import lecho.lib.hellocharts.view.LineChartView;
 
 public class LinechartFragment extends BaseFragment implements DetailActivity.myInterface{
@@ -62,26 +64,7 @@ public class LinechartFragment extends BaseFragment implements DetailActivity.my
         super.onCreate(savedInstanceState);
 
     }
-    private void generrateData(){
-//        ArrayList<PointValue> values = new ArrayList<PointValue>();//折线上的点
-//        values.add(new PointValue(0, 1));
-//        values.add(new PointValue(1, 1));
-//        values.add(new PointValue(2, 1));
-//        values.add(new PointValue(3, 1));
-//        Line line = new Line(values).setColor(Color.BLUE);//声明线并设置颜色
-//        line.setCubic(false);//设置是平滑的还是直的
-//        ArrayList<Line> lines=new ArrayList<Line>();
-//        lines.add(line);
-//        lineChart.setInteractive(true);//设置图表是可以交互的（拖拽，缩放等效果的前提）
-//        lineChart.setZoomType(ZoomType.HORIZONTAL_AND_VERTICAL);//设置缩放方向
-//        LineChartData data = new LineChartData();
-//        Axis axisX = new Axis();//x轴
-//        Axis axisY = new Axis();//y轴
-//        data.setAxisXBottom(axisX);
-//        data.setAxisYLeft(axisY);
-//        data.setLines(lines);
-//        lineChart.setLineChartData(data);//给图表设置数据
-    }
+
 
     @Override
     public void onPointChanged(ArrayList<ArrayList<Double>> point) {
@@ -106,14 +89,23 @@ public class LinechartFragment extends BaseFragment implements DetailActivity.my
         lines.add(line1);
         if(V1Line!=null){
             V1Line.setInteractive(true);
-            V1Line.setZoomType(ZoomType.HORIZONTAL_AND_VERTICAL);//设置缩放方向
+            V1Line.setZoomType(ZoomType.VERTICAL);//设置缩放方向
             LineChartData data = new LineChartData();
             Axis axisX = new Axis();//x轴
             Axis axisY = new Axis();//y轴
+            axisX.setHasLines(true);
+            axisY.setHasLines(true);
+
             data.setAxisXBottom(axisX);
             data.setAxisYLeft(axisY);
             data.setLines(lines);
+//            final Viewport v =new Viewport(V1Line.getMaximumViewport());
+//            v.top=-4;
+//            v.bottom=-7;
+//            V1Line.setMaximumViewport(v);
             V1Line.setLineChartData(data);
+            V1Line.setZoomLevel(0,Collections.min(point.get(1)).intValue() ,5);
+
         }
 
         ArrayList<Line> lines2=new ArrayList<Line>();
@@ -124,7 +116,8 @@ public class LinechartFragment extends BaseFragment implements DetailActivity.my
             LineChartData data2 = new LineChartData();
             Axis axisX = new Axis();//x轴
             Axis axisY = new Axis();//y轴
-
+            axisX.setHasLines(true);
+            axisY.setHasLines(true);
             data2.setAxisXBottom(axisX);
             data2.setAxisYLeft(axisY);
             data2.setLines(lines2);
@@ -134,14 +127,19 @@ public class LinechartFragment extends BaseFragment implements DetailActivity.my
         lines3.add(line3);
         if(V3Line!=null){
             V3Line.setInteractive(true);
-            V3Line.setZoomType(ZoomType.HORIZONTAL_AND_VERTICAL);//设置缩放方向
+            V3Line.setZoomType(ZoomType.VERTICAL);//设置缩放方向
             LineChartData data3 = new LineChartData();
             Axis axisX = new Axis();//x轴
             Axis axisY = new Axis();//y轴
+            axisX.setHasLines(true);
+            axisY.setHasLines(true);
             data3.setAxisXBottom(axisX);
             data3.setAxisYLeft(axisY);
             data3.setLines(lines3);
             V3Line.setLineChartData(data3);
+            int midY=Collections.max(point.get(3)).intValue()+Collections.min(point.get(3)).intValue();
+            midY=(int)midY/2;
+            V3Line.setZoomLevel(0, midY,5);
         }
     }
 }
