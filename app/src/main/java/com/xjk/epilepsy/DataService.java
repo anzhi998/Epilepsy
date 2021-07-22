@@ -372,13 +372,16 @@ public class DataService extends Service {
                     //发送数据给蓝牙后，蓝牙返回数据在这里
                     //7.  获取的是 byte 整数数组
                     final byte[] values = characteristic.getValue();
+
+                    String hex=ConvertUtils.bytesToHexString(values);
+                    sendContentBroadcast(hex);
                     //8.  将数组转成 string 用于传输
-                    tcpStrBuff.append(ConvertUtils.bytesToHexString(values));
+                    tcpStrBuff.append(hex);
                     String str = tcpStrBuff.toString();        // 拼接后的 str
                     int length = str.length();                 // 拼接后的 str 长度
                     if(length>2000){           //缓存2k字节数据，一次socket发送
                         Log.e(TAG,str);           //打印
-                        sendContentBroadcast(str);
+
                         // socket发送数据
                         try{
                             if(socket!=null && !socket.isClosed() && outputStream!=null){

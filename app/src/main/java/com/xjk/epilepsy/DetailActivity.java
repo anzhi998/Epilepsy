@@ -11,12 +11,10 @@ import android.content.ServiceConnection;
 import android.os.Build;
 import android.os.Bundle;
 
+import com.xjk.epilepsy.Fragments.BreChartFragment;
 import com.xjk.epilepsy.Fragments.LinechartFragment;
-import com.xjk.epilepsy.Fragments.breFragment;
 import com.xjk.epilepsy.Utils.BaseFragment;
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
@@ -27,25 +25,12 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.SystemClock;
 import android.util.Log;
-import android.view.View;
 import android.widget.Button;
 import android.widget.RadioGroup;
 
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Queue;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.Executor;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import com.xjk.epilepsy.Utils.GlobalBleDevice;
@@ -311,7 +296,7 @@ public class DetailActivity extends FragmentActivity {
         mBaseFragment = new ArrayList<>();
         interList   =   new ArrayList<>();
         VFragment=LinechartFragment.getInstance();
-        BREFragment= breFragment.getInstance();
+        BREFragment= BreChartFragment.getInstance();
         SPDFragment=LinechartFragment.getInstance();
         mBaseFragment.add(VFragment);
         mBaseFragment.add(BREFragment);

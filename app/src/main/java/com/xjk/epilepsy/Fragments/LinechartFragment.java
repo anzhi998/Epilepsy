@@ -104,7 +104,9 @@ public class LinechartFragment extends BaseFragment implements DetailActivity.my
 //            v.bottom=-7;
 //            V1Line.setMaximumViewport(v);
             V1Line.setLineChartData(data);
-            V1Line.setZoomLevel(0,Collections.min(point.get(1)).intValue() ,5);
+            int midY=Collections.max(point.get(1)).intValue()+Collections.min(point.get(1)).intValue();
+            midY=(int)midY/2;
+            V1Line.setZoomLevel(500,Collections.min(point.get(1)).intValue() ,5);
 
         }
 
@@ -139,7 +141,7 @@ public class LinechartFragment extends BaseFragment implements DetailActivity.my
             V3Line.setLineChartData(data3);
             int midY=Collections.max(point.get(3)).intValue()+Collections.min(point.get(3)).intValue();
             midY=(int)midY/2;
-            V3Line.setZoomLevel(0, midY,5);
+            V3Line.setZoomLevel(500, midY,5);
         }
     }
 }
