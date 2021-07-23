@@ -43,6 +43,8 @@ public class DetailActivity extends FragmentActivity {
     private final String TRUETYPE="05";
     private final int DRAW=198;
     private final int GETPPOINTS=199;
+    private final int parseStringInterval=20;
+    private final int drawLineInterval=4;
     //线程池   采用线程池，不用一个个开线程
     private ScheduledThreadPoolExecutor mThreadPool;
     private RadioGroup mRg_main;
@@ -129,7 +131,7 @@ public class DetailActivity extends FragmentActivity {
             Message message = new Message();
             message.what = DRAW;             //触发 handle UI更新线程
             handler.sendMessage(message);
-            dataBuff.delete(0,dataBuff.length());
+
         }
     };
     Runnable task_deal=new Runnable() {
@@ -175,13 +177,16 @@ public class DetailActivity extends FragmentActivity {
         try {
             int startIndex=dataString.indexOf(HEAD);
             dataBuff.delete(0,startIndex+16);
+            Log.e(TAG,"缓冲区删除数据，删除长度为"+String.valueOf(startIndex+16));
             String type=dataBuff.substring(0,2);
             if(type.equals(TRUETYPE)){
                 dataBuff.delete(0,6);
                 PCGStr_10point=dataBuff.substring(0,2*132);
                 dataBuff.delete(0,2*132);
-            }else{
-                Log.e(TAG,"收到了其他类型的数据，数据类型:"+type);
+                Log.e(TAG,"缓冲区删除数据，删除长度为264");
+            }else {
+
+                dataBuff.delete(0,6);
             }
         }catch (Exception e){
             Log.e(TAG,"从缓冲区中寻找ecg信号出错");
@@ -223,9 +228,9 @@ public class DetailActivity extends FragmentActivity {
         btn_ble=(Button)findViewById(R.id.btn_ble);
         btn_socket=(Button)findViewById(R.id.btn_socket);
         doRegusterReceiver();
-        mThreadPool.scheduleAtFixedRate(task,3,3,TimeUnit.SECONDS);
+        mThreadPool.scheduleAtFixedRate(task,3,drawLineInterval,TimeUnit.SECONDS);
         //mThreadPool.scheduleAtFixedRate(task_clean,5,5,TimeUnit.SECONDS);
-        mThreadPool.scheduleAtFixedRate(task_deal,2,20,TimeUnit.MILLISECONDS);
+        mThreadPool.scheduleAtFixedRate(task_deal,2,parseStringInterval,TimeUnit.MILLISECONDS);
     }
 
     private BaseFragment getFragment() {
