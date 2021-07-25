@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">癫痫手环</string>
+    <string name="app_name">心电监护</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="title_activity_detail">DetailActivity</string>

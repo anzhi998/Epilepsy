@@ -13,6 +13,7 @@ import android.os.Bundle;
 
 import com.xjk.epilepsy.Fragments.BreChartFragment;
 import com.xjk.epilepsy.Fragments.LinechartFragment;
+import com.xjk.epilepsy.Fragments.SpeedFragment;
 import com.xjk.epilepsy.Utils.BaseFragment;
 
 import androidx.annotation.RequiresApi;
@@ -50,10 +51,6 @@ public class DetailActivity extends FragmentActivity {
     private RadioGroup mRg_main;
     private List<BaseFragment> mBaseFragment;
     private List<BaseFragment> interList;
-    public ArrayList<Double> BRE;
-    public ArrayList<Double> V1;
-    public ArrayList<Double> V2;
-    public ArrayList<Double> V3;
     private BaseFragment VFragment;
     private BaseFragment BREFragment;
     private BaseFragment SPDFragment;
@@ -201,9 +198,13 @@ public class DetailActivity extends FragmentActivity {
                 data2Daw=purePointBuff.substring(0,2*132*100);
                 purePointBuff.delete(0,2*132*100);
                 ArrayList<ArrayList<Double>> point=StringParse.string2Point(data2Daw);
-                VFragment.onPointChanged(point);
-                Log.i(TAG,"重绘折线图");
-                BREFragment.onPointChanged(point);
+                for(int i=0;i<interList.size();i++){
+                    interList.get(i).onPointChanged(point);
+                }
+
+//                VFragment.onPointChanged(point);
+//                BREFragment.onPointChanged(point);
+//                SPDFragment.onPointChanged(point);
             }
         }
     }
@@ -213,10 +214,6 @@ public class DetailActivity extends FragmentActivity {
         //初始化线程池
         mThreadPool = new ScheduledThreadPoolExecutor(3);
         setContentView(R.layout.activity_detail);
-        BRE=new ArrayList<Double>();
-        V1=new ArrayList<Double>();
-        V2=new ArrayList<Double>();
-        V3=new ArrayList<Double>();
         dataBuff=new StringBuffer();
         purePointBuff=new StringBuffer();
         //初始化View
@@ -239,20 +236,20 @@ public class DetailActivity extends FragmentActivity {
     private void setListener() {
         mRg_main.setOnCheckedChangeListener(new MyOnCheckedChangeListener());
         //设置默认选中
-        mRg_main.check(R.id.btn_v1);
+        mRg_main.check(R.id.btn_ecg);
     }
     class MyOnCheckedChangeListener implements RadioGroup.OnCheckedChangeListener {
 
         @Override
         public void onCheckedChanged(RadioGroup group, int checkedId) {
             switch (checkedId) {
-                case R.id.btn_v1:
+                case R.id.btn_ecg:
                     position = 0;
                     break;
-                case R.id.btn_v2:
+                case R.id.btn_bre:
                     position = 1;
                     break;
-                case R.id.btn_v3:
+                case R.id.btn_acc:
                     position = 2;
                     break;
                 default:
@@ -302,7 +299,7 @@ public class DetailActivity extends FragmentActivity {
         interList   =   new ArrayList<>();
         VFragment=LinechartFragment.getInstance();
         BREFragment= BreChartFragment.getInstance();
-        SPDFragment=LinechartFragment.getInstance();
+        SPDFragment= SpeedFragment.getInstance();
         mBaseFragment.add(VFragment);
         mBaseFragment.add(BREFragment);
         mBaseFragment.add(SPDFragment);

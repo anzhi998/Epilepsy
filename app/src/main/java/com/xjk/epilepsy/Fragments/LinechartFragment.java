@@ -36,6 +36,7 @@ public class LinechartFragment extends BaseFragment implements DetailActivity.my
 
     private ArrayList<PointValue> generateData(ArrayList<Double> point){
         int length=point.size();
+        //        point= ConvertUtils.normalize(point);
         Log.i("点数据","长度："+String.valueOf(length));
         ArrayList<PointValue> values = new ArrayList<PointValue>();//折线上的点
         for(int i=0;i<length;i++){
@@ -141,7 +142,7 @@ public class LinechartFragment extends BaseFragment implements DetailActivity.my
             V3Line.setLineChartData(data3);
             int midY=Collections.max(point.get(3)).intValue()+Collections.min(point.get(3)).intValue();
             midY=(int)midY/2;
-            V3Line.setZoomLevel(500, midY,5);
+            //V3Line.setZoomLevel(500, midY,5);
         }
     }
 }

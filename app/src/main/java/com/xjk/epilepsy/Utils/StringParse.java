@@ -15,6 +15,9 @@ public class StringParse {
         ArrayList<Double> V2=new ArrayList<Double>();
         ArrayList<Double> V3=new ArrayList<Double>();
         ArrayList<Double> BRE=new ArrayList<Double>();
+        ArrayList<Double> ACCx=new ArrayList<Double>();//加速度
+        ArrayList<Double> ACCy=new ArrayList<Double>();
+        ArrayList<Double> ACCz=new ArrayList<Double>();
         ArrayList<ArrayList<Double>> ans=new ArrayList<ArrayList<Double>>();
         for(String ecgStr : ecgstrList){
             if(ecgStr.length()<264)
@@ -22,9 +25,13 @@ public class StringParse {
                 break;
             }
             String ecg4Channel=ecgStr.substring(0,240);
-            int len2=ecg4Channel.length();
-            String accelerateSpeed=ecgStr.substring(240);
-            int len3=accelerateSpeed.length();
+            String accelerateSpeed=ecgStr.substring(240,252);
+            String x=accelerateSpeed.substring(0,4);
+            String y=accelerateSpeed.substring(4,8);
+            String z=accelerateSpeed.substring(8,12);
+            ACCx.add(str2acc(x));
+            ACCy.add(str2acc(y));
+            ACCz.add(str2acc(z));
             ArrayList<Double> dataArray=new ArrayList<Double>();
             int index=0;
             for(int i=0;i<40;i++){
@@ -44,11 +51,15 @@ public class StringParse {
                 V2.add(dataArray.get(j+2));
                 V3.add(dataArray.get(j+3));
             }
+
         }
         ans.add(BRE);
         ans.add(V1);
         ans.add(V2);
         ans.add(V3);
+        ans.add(ACCx);
+        ans.add(ACCy);
+        ans.add(ACCz);
         return ans;
     }
 
@@ -100,7 +111,14 @@ public class StringParse {
             return str.substring(f, t);
         }
     }
+    private static Double str2acc(String s){
+        String temp=s+"0000";
+        Long longstr=Long.parseLong(temp,16);
+        int num=new Integer(longstr.intValue());
+        double value=(num>>16)*16/65535;
+        return value;
 
+    }
     private static String strTo16(String s) {
         String str = "";
         for (int i = 0; i < s.length(); i++) {

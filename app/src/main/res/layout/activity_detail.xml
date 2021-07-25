@@ -41,17 +41,17 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
         <RadioButton
-            android:id="@+id/btn_v1"
+            android:id="@+id/btn_ecg"
             style="@style/style_RadioButton"
             android:text="三导联" />
 
         <RadioButton
-            android:id="@+id/btn_v2"
+            android:id="@+id/btn_bre"
             style="@style/style_RadioButton"
             android:text="呼吸波" />
 
         <RadioButton
-            android:id="@+id/btn_v3"
+            android:id="@+id/btn_acc"
             style="@style/style_RadioButton"
             android:text="加速度" />
     </RadioGroup>
