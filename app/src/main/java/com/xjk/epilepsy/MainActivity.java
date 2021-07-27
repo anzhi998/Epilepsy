@@ -11,16 +11,16 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.content.BroadcastReceiver;
-import android.content.ComponentName;
+
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.ServiceConnection;
+import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.IBinder;
-import android.os.SystemClock;
+
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.widget.LinearLayout;
@@ -28,6 +28,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.chad.library.adapter.base.BaseQuickAdapter;
+import com.huawei.hms.hmsscankit.ScanUtil;
+import com.huawei.hms.ml.scan.HmsScan;
+import com.huawei.hms.ml.scan.HmsScanAnalyzerOptions;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 import com.xjk.epilepsy.Utils.GlobalBleDevice;
 import com.xjk.epilepsy.Utils.StatusBarUtil;
@@ -38,16 +41,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import com.xjk.epilepsy.Utils.StringParse;
-
-import static com.xjk.epilepsy.Utils.StringParse.string2Point;
-
 public class MainActivity extends Activity implements View.OnClickListener {
     public static final String action="jason.broadcast.action";
-    private  static int REQUEST_ENABLE_BLUETOOTH = 1;
-//    private  boolean  mIsBound=false;
-//    private DataService.MyBinder myBinder;  //代理人
-//    private DataService dataService;
+    private  static final int REQUEST_ENABLE_BLUETOOTH = 1;
+    public static final int DEFAULT_VIEW = 66;
+
+    private static final int REQUEST_CODE_SCAN = 67;
+    private static final int REQUEST_CODE_ACTION= 99;
+    private String targetDeviceMac;
     BluetoothAdapter bluetoothAdapter;
     private TextView scanDevices;
     private LinearLayout loadingLay;
@@ -56,6 +57,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private final String TAG="主线程";
     private RxPermissions rxPermissions;//权限请求
     DeviceAdapter mAdapter;//蓝牙设备适配器
+
     List<BluetoothDevice> deviceList = new ArrayList<>();//储存蓝牙设备
     private  TextView scanBtn;
     @Override
@@ -154,9 +156,15 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 Intent intent=new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
                 startActivityForResult(intent, REQUEST_ENABLE_BLUETOOTH);
             }
-        }else {
-            showMsg("该设备不支持蓝牙");
         }
+    }
+    public void onClickQrScan(View view){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            this.requestPermissions(
+                    new String[]{Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE},
+                    DEFAULT_VIEW);
+        }
+
     }
 
     /**
@@ -169,23 +177,41 @@ public class MainActivity extends Activity implements View.OnClickListener {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQUEST_ENABLE_BLUETOOTH) {
-            if (resultCode == RESULT_OK) {
-                showMsg("蓝牙打开成功");
-            } else {
-                showMsg("蓝牙打开失败");
-            }
-        }
-        else if(requestCode==99){
-            if(resultCode==99)
-            {
-                if(bluetoothAdapter.isEnabled()){
-                    if(mAdapter !=null){
-                        deviceList.clear();
-                        mAdapter.notifyDataSetChanged();
+        switch (requestCode){
+            case REQUEST_ENABLE_BLUETOOTH:
+                if (resultCode == RESULT_OK) {
+                    showMsg("蓝牙打开成功");
+                } else {
+                    showMsg("蓝牙打开失败");
+                }
+                break;
+            case REQUEST_CODE_ACTION:
+                if(resultCode==REQUEST_CODE_ACTION)
+                {
+                    if(bluetoothAdapter.isEnabled()){
+                        if(mAdapter !=null){
+                            deviceList.clear();
+                            mAdapter.notifyDataSetChanged();
+                        }
                     }
                 }
-            }
+                break;
+            case REQUEST_CODE_SCAN:
+                Object obj = data.getParcelableExtra(ScanUtil.RESULT);
+                if (obj instanceof HmsScan) {
+                    if (!TextUtils.isEmpty(((HmsScan) obj).getOriginalValue())) {
+                        targetDeviceMac=((HmsScan) obj).getOriginalValue();
+                        Log.i(TAG,"扫描得到的mac地址："+targetDeviceMac);
+                        BluetoothDevice tempdevice=bluetoothAdapter.getRemoteDevice(targetDeviceMac);
+                        createOrRemoveBond(1,tempdevice);
+                        Intent in = new Intent(MainActivity.this,DetailActivity.class);
+                        ((GlobalBleDevice) getApplication()).setGlobalBlueDevice(tempdevice);
+                        startActivityForResult(in,REQUEST_CODE_ACTION);
+                    }
+                    return;
+                }
+                break;
+            default:break;
         }
     }
 
@@ -211,6 +237,20 @@ public class MainActivity extends Activity implements View.OnClickListener {
         }
 
     }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (permissions == null || grantResults == null || grantResults.length < 2 || grantResults[0] != PackageManager.PERMISSION_GRANTED || grantResults[1] != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
+        if (requestCode == DEFAULT_VIEW) {
+            //start ScankitActivity for scanning barcode
+            ScanUtil.startScan(MainActivity.this, REQUEST_CODE_SCAN, new HmsScanAnalyzerOptions.Creator().setHmsScanTypes(HmsScan.ALL_SCAN_TYPE).create());
+        }
+    }
+
     private void showDevicesData(Context context, Intent intent) {
         getBondedDevice();//获取已绑定的设备
         //获取周围蓝牙设备
@@ -251,7 +291,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
 //                    }).start();
                         Intent in = new Intent(MainActivity.this,DetailActivity.class);
                         ((GlobalBleDevice) getApplication()).setGlobalBlueDevice(tempdevice);
-                        startActivityForResult(in,99);
+                        startActivityForResult(in,REQUEST_CODE_ACTION);
                     }
                     else{
                         showMsg("不支持该设备");

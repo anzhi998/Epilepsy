@@ -36,7 +36,6 @@ import java.util.concurrent.Executors;
 
 public class DataService extends Service {
     public static final String TAG = "BLE转TCP中继器";
-    private  Button btn_socket,btn_ble;
     public static  BluetoothDevice bluetoothDevice;        //目标蓝牙设备
     public static  BluetoothGatt gatt;                     //蓝牙协议栈包括GATT
 

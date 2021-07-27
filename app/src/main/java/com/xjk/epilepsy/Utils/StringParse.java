@@ -115,7 +115,7 @@ public class StringParse {
         String temp=s+"0000";
         Long longstr=Long.parseLong(temp,16);
         int num=new Integer(longstr.intValue());
-        double value=(num>>16)*16/65535;
+        double value=(double)(num>>16)*32/65535;
         return value;
 
     }
