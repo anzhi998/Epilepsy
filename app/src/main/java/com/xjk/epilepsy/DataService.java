@@ -373,13 +373,13 @@ public class DataService extends Service {
                     final byte[] values = characteristic.getValue();
 
                     String hex=ConvertUtils.bytesToHexString(values);
+                    Log.i(TAG,"蓝牙收到数据，长度为："+String.valueOf(hex.length()));
                     sendContentBroadcast(hex);
                     //8.  将数组转成 string 用于传输
                     tcpStrBuff.append(hex);
                     String str = tcpStrBuff.toString();        // 拼接后的 str
                     int length = str.length();                 // 拼接后的 str 长度
                     if(length>2000){           //缓存2k字节数据，一次socket发送
-                        Log.e(TAG,str);           //打印
 
                         // socket发送数据
                         try{
@@ -448,7 +448,7 @@ public class DataService extends Service {
         Intent intent=new Intent();
         intent.setAction("com.xjk.servicecallback.content");
         intent.putExtra("data",data);
-        Log.i(TAG,"广播数据包："+data);
+        Log.e(TAG,"广播数据包："+data);
         sendBroadcast(intent);
     }
 

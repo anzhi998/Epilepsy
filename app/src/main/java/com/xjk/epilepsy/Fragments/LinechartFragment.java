@@ -1,6 +1,9 @@
 package com.xjk.epilepsy.Fragments;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.View;
 
@@ -8,11 +11,15 @@ import com.xjk.epilepsy.DetailActivity;
 import com.xjk.epilepsy.R;
 import com.xjk.epilepsy.Utils.BaseFragment;
 
+import androidx.annotation.RequiresApi;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Vector;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import lecho.lib.hellocharts.gesture.ZoomType;
 import lecho.lib.hellocharts.model.Axis;
@@ -28,19 +35,63 @@ public class LinechartFragment extends BaseFragment implements DetailActivity.my
     private LineChartView V1Line;
     private LineChartView V2Line;
     private LineChartView V3Line;
-    private ArrayList<PointValue> oldV1;
-    private ArrayList<PointValue> oldV2;
-    private ArrayList<PointValue> oldV3;
+    private Vector<Double> oldV1;
+    private Vector<Double> oldV2;
+    private Vector<Double> oldV3;
+    private Vector<Double>  newV1;
+    private Vector<Double> newV2;
+    private Vector<Double> newV3;
+    private final int updateECG=12;
+    private boolean isAnanimation=false;
+    private ScheduledThreadPoolExecutor upDatePool;
     @Override
     protected View initView() {
         View view = View.inflate(mContext, R.layout.fragment_linechart,null);
         return view;
     }
-
-    private ArrayList<PointValue> generateData(ArrayList<Double> point){
+    Runnable task=new Runnable() {
+        @Override
+        public void run() {
+            Message message = new Message();
+            message.what = updateECG;             //触发 handle UI更新线程
+            handler.sendMessage(message);
+        }
+    };
+    private Handler handler = new Handler(new Handler.Callback() {
+        @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+        @Override
+        public boolean handleMessage(Message message) {
+            switch (message.what) {
+                case updateECG:
+                    updatePoints();
+                    break;
+                default:
+                    break;
+            }
+            return true;  //false
+        }
+    });
+    private void updatePoints(){
+        int startIndex=oldV1.size()-newV1.size();
+        if(startIndex>oldV1.size()-4){
+            return;
+        }
+        for (int i=0;i<4;i++){
+            Double temV1=newV1.get(0);
+            Double temV2=newV2.get(0);
+            Double temV3=newV3.get(0);
+            oldV1.set(startIndex+i,temV1);
+            oldV2.set(startIndex+i,temV2);
+            oldV3.set(startIndex+i,temV3);
+            newV1.remove(0);
+            newV2.remove(0);
+            newV3.remove(0);
+        }
+        updateLineChart();
+    }
+    private ArrayList<PointValue> generateData(Vector<Double> point){
         int length=point.size();
         //        point= ConvertUtils.normalize(point);
-        Log.i("点数据","长度："+String.valueOf(length));
         ArrayList<PointValue> values = new ArrayList<PointValue>();//折线上的点
         for(int i=0;i<length;i++){
             Double num=point.get(i);
@@ -66,13 +117,14 @@ public class LinechartFragment extends BaseFragment implements DetailActivity.my
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        upDatePool = new ScheduledThreadPoolExecutor(2);
     }
 
     private void updateLineChart(){
-        Line line1 = new Line(oldV1).setColor(Color.RED);//声明线并设置颜色
-        Line line2= new Line(oldV2).setColor(Color.RED);//声明线并设置颜色
-        Line line3= new Line(oldV3).setColor(Color.RED);//声明线并设置颜色
+
+        Line line1 = new Line(generateData(oldV1)).setColor(Color.RED);//声明线并设置颜色
+        Line line2= new Line(generateData(oldV2)).setColor(Color.RED);//声明线并设置颜色
+        Line line3= new Line(generateData(oldV3)).setColor(Color.RED);//声明线并设置颜色
         line1.setCubic(false);//设置是平滑的还是直的
         line1.setHasPoints(false);
         line1.setStrokeWidth(1);
@@ -150,24 +202,33 @@ public class LinechartFragment extends BaseFragment implements DetailActivity.my
         }
     }
     @Override
-    public void onPointChanged(ArrayList<ArrayList<Double>> point) {
-        ArrayList<PointValue> v1data=generateData(point.get(1));
-        ArrayList<PointValue> v2data=generateData(point.get(2));
-        ArrayList<PointValue> v3data=generateData(point.get(3));
+    public void onPointChanged(Vector<Vector<Double>> point) {
+        newV1=point.get(1);
+        newV2=point.get(2);
+        newV3=point.get(3);
+        if(V1Line==null||V2Line==null||V1Line==null){
+            return;
+        }
         if(oldV1==null&&oldV2==null&&oldV3==null){
-            oldV1=v1data;
-            oldV2=v2data;
-            oldV3=v3data;
+            oldV1=newV1;
+            oldV2=newV2;
+            oldV3=newV3;
+            updateLineChart();
         }else{
             //动态更新
-            for (int i=0;i<v1data.size();i++){
-                oldV1.set(i,v1data.get(i));
-                oldV2.set(i,v3data.get(i));
-                oldV3.set(i,v3data.get(i));
-                updateLineChart();
+            if(!isAnanimation){
+                upDatePool.scheduleAtFixedRate(task,0,10, TimeUnit.MILLISECONDS);
+                isAnanimation=true;
             }
+
         }
-
-
+    }
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if(!upDatePool.isShutdown()){
+            upDatePool.purge();
+            upDatePool.shutdown();
+        }
     }
 }

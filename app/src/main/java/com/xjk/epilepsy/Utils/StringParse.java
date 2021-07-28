@@ -3,22 +3,24 @@ package com.xjk.epilepsy.Utils;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 
 public class StringParse {
-    public static final ArrayList<ArrayList<Double>> string2Point(String data) {
+    public static final Vector<Vector<Double>> string2Point(String data) {
         if(data.length()<264)
         {
             return null;
         }
         List<String> ecgstrList=getStrList(data,264);
-        ArrayList<Double> V1=new ArrayList<Double>();
-        ArrayList<Double> V2=new ArrayList<Double>();
-        ArrayList<Double> V3=new ArrayList<Double>();
-        ArrayList<Double> BRE=new ArrayList<Double>();
-        ArrayList<Double> ACCx=new ArrayList<Double>();//加速度
-        ArrayList<Double> ACCy=new ArrayList<Double>();
-        ArrayList<Double> ACCz=new ArrayList<Double>();
-        ArrayList<ArrayList<Double>> ans=new ArrayList<ArrayList<Double>>();
+        Vector<Double> V1=new Vector<>();
+        Vector<Double> V2=new Vector<>();
+        Vector<Double> V3=new Vector<>();
+        Vector<Double> BRE=new Vector<>();
+        Vector<Double> ACCx=new Vector<>();
+        Vector<Double> ACCy=new Vector<>();
+        Vector<Double> ACCz=new Vector<>();
+
+        Vector<Vector<Double>> ans=new Vector<Vector<Double>>();
         for(String ecgStr : ecgstrList){
             if(ecgStr.length()<264)
             {
@@ -32,7 +34,7 @@ public class StringParse {
             ACCx.add(str2acc(x));
             ACCy.add(str2acc(y));
             ACCz.add(str2acc(z));
-            ArrayList<Double> dataArray=new ArrayList<Double>();
+            Vector<Double> dataArray=new Vector<>();
             int index=0;
             for(int i=0;i<40;i++){
                 String point=ecg4Channel.substring(index,index+6);
@@ -53,6 +55,14 @@ public class StringParse {
             }
 
         }
+        BRE=ConvertUtils.normalize(BRE);
+        V1=ConvertUtils.normalize(V1);
+        V2=ConvertUtils.normalize(V2);
+        V3=ConvertUtils.normalize(V3);
+//        ACCx=ConvertUtils.normalize(ACCx);
+//        ACCy=ConvertUtils.normalize(ACCy);
+//        ACCz=ConvertUtils.normalize(ACCz);
+
         ans.add(BRE);
         ans.add(V1);
         ans.add(V2);

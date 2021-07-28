@@ -2,6 +2,7 @@ package com.xjk.epilepsy.Utils;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Vector;
 
 public class ConvertUtils {
     public static final String bytesToHexString(byte[] bArray) {
@@ -19,12 +20,12 @@ public class ConvertUtils {
         double[] ydata={1.0};
         return  ydata;
     }
-    public static final ArrayList<Double> normalize(ArrayList<Double> arr){
+    public static final Vector<Double> normalize(Vector<Double> arr){
         double min = Collections.min(arr);
         double max=Collections.max(arr);
         double rate=max-min;
-        for(double item : arr){
-            item=(item-min)/rate;
+        for(int i=0;i<arr.size();i++){
+            arr.set(i,(arr.get(i)-min)/rate);
         }
         return arr;
     }

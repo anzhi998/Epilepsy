@@ -238,6 +238,9 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 ShowBondedDevices();
                 break;
             case REQUEST_CODE_SCAN:
+                if (resultCode != RESULT_OK || data == null) {
+                    return;
+                }
                 Object obj = data.getParcelableExtra(ScanUtil.RESULT);
                 if (obj instanceof HmsScan) {
                     if (!TextUtils.isEmpty(((HmsScan) obj).getOriginalValue())) {

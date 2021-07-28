@@ -31,6 +31,7 @@ import android.widget.RadioGroup;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Vector;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -66,7 +67,7 @@ public class DetailActivity extends FragmentActivity {
         registerReceiver(mDataReceiver,filter);
     }
     public static  interface  myInterface{
-        void onPointChanged(ArrayList<ArrayList<Double>> point);
+        void onPointChanged(Vector<Vector<Double>> point);
     }
     public final class MyConn implements ServiceConnection{
         @Override
@@ -119,7 +120,7 @@ public class DetailActivity extends FragmentActivity {
         super.onStart();
         conn =new MyConn();
         boolean ans=bindService(new Intent(DetailActivity.this,DataService.class),conn,BIND_AUTO_CREATE);
-        Log.e(TAG,"绑定服务的结果："+String.valueOf(ans));
+//        Log.e(TAG,"绑定服务的结果："+String.valueOf(ans));
 
     }
     Runnable task=new Runnable() {
@@ -139,13 +140,7 @@ public class DetailActivity extends FragmentActivity {
             handler.sendMessage(me);
         }
     };
-    Runnable task_clean=new Runnable() {
-        @Override
-        public void run() {
-            dataBuff.delete(0,dataBuff.length());
-            Log.i(TAG,"从缓冲区删除数据");
-        }
-    };
+
     private Handler handler = new Handler(new Handler.Callback() {
         @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
         @Override
@@ -174,15 +169,14 @@ public class DetailActivity extends FragmentActivity {
         try {
             int startIndex=dataString.indexOf(HEAD);
             dataBuff.delete(0,startIndex+16);
-            Log.e(TAG,"缓冲区删除数据，删除长度为"+String.valueOf(startIndex+16));
+//            Log.e(TAG,"缓冲区删除数据，删除长度为"+String.valueOf(startIndex+16));
             String type=dataBuff.substring(0,2);
             if(type.equals(TRUETYPE)){
                 dataBuff.delete(0,6);
                 PCGStr_10point=dataBuff.substring(0,2*132);
                 dataBuff.delete(0,2*132);
-                Log.e(TAG,"缓冲区删除数据，删除长度为264");
+                Log.e(TAG,"缓冲区找到1帧ECG信号");
             }else {
-
                 dataBuff.delete(0,6);
             }
         }catch (Exception e){
@@ -197,14 +191,13 @@ public class DetailActivity extends FragmentActivity {
             if (data2Daw.length()>2*132*100){
                 data2Daw=purePointBuff.substring(0,2*132*100);
                 purePointBuff.delete(0,2*132*100);
-                ArrayList<ArrayList<Double>> point=StringParse.string2Point(data2Daw);
+                Vector<Vector<Double>> point=StringParse.string2Point(data2Daw);
                 for(int i=0;i<interList.size();i++){
                     interList.get(i).onPointChanged(point);
                 }
-
-//                VFragment.onPointChanged(point);
-//                BREFragment.onPointChanged(point);
-//                SPDFragment.onPointChanged(point);
+                Log.e(TAG,"更新折线图");
+            }else {
+                Log.e(TAG,"数据量不够,缓冲区数据大小:"+String.valueOf(data2Daw.length()));
             }
         }
     }

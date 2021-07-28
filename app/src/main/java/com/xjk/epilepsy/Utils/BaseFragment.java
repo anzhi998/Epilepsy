@@ -10,6 +10,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import java.util.ArrayList;
+import java.util.Vector;
 
 public abstract class BaseFragment extends Fragment {
     /**
@@ -49,6 +50,6 @@ public abstract class BaseFragment extends Fragment {
 
     }
 
-    public abstract void onPointChanged(ArrayList<ArrayList<Double>> point);
+    public abstract void onPointChanged(Vector<Vector<Double>> point);
 }
 

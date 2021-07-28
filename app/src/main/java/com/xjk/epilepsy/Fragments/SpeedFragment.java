@@ -1,6 +1,9 @@
 package com.xjk.epilepsy.Fragments;
 import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.util.Log;
 import android.view.View;
 
@@ -8,11 +11,15 @@ import com.xjk.epilepsy.DetailActivity;
 import com.xjk.epilepsy.R;
 import com.xjk.epilepsy.Utils.BaseFragment;
 
+import androidx.annotation.RequiresApi;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Vector;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import lecho.lib.hellocharts.gesture.ZoomType;
 import lecho.lib.hellocharts.model.Axis;
@@ -26,17 +33,47 @@ public class SpeedFragment extends BaseFragment implements DetailActivity.myInte
 
 
     private LineChartView SpdLine;
+    private boolean isAnanimation=false;
+    private final int updateSpd=13;
+    private ScheduledThreadPoolExecutor upDatePool;
+    private Vector<Double> oldx;
+    private Vector<Double> oldy;
+    private Vector<Double> oldz;
+    private Vector<Double> newx;
+    private Vector<Double> newy;
+    private Vector<Double> newz;
+
     @Override
     protected View initView() {
         View view = View.inflate(mContext, R.layout.fragment_speed,null);
         return view;
     }
-
-    private ArrayList<PointValue> generateData(ArrayList<Double> point){
+    Runnable task=new Runnable() {
+        @Override
+        public void run() {
+            Message message = new Message();
+            message.what = updateSpd;             //触发 handle UI更新线程
+            handler.sendMessage(message);
+        }
+    };
+    private Handler handler = new Handler(new Handler.Callback() {
+        @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+        @Override
+        public boolean handleMessage(Message message) {
+            switch (message.what) {
+                case updateSpd:
+                    updatePoints();
+                    break;
+                default:
+                    break;
+            }
+            return true;  //false
+        }
+    });
+    private ArrayList<PointValue> generateData(Vector<Double> point){
         int length=point.size();
-        Log.i("点数据","长度："+String.valueOf(length));
         //        point= ConvertUtils.normalize(point);
-        ArrayList<PointValue> values = new ArrayList<PointValue>();//折线上的点
+        ArrayList<PointValue> values = new ArrayList<>();//折线上的点
         for(int i=0;i<length;i++){
             Double num=point.get(i);
             String data=num.toString();
@@ -59,26 +96,35 @@ public class SpeedFragment extends BaseFragment implements DetailActivity.myInte
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        upDatePool=new ScheduledThreadPoolExecutor(2);
     }
 
-
-    @Override
-    public void onPointChanged(ArrayList<ArrayList<Double>> point) {
-        ArrayList<PointValue> xdata=generateData(point.get(4));
-        ArrayList<PointValue> ydata=generateData(point.get(5));
-        ArrayList<PointValue> zdata=generateData(point.get(6));
-        Line line1 = new Line(xdata).setColor(Color.RED);//声明线并设置颜色
-        Line line2 = new Line(ydata).setColor(Color.BLUE);//声明线并设置颜色
-        Line line3 = new Line(zdata).setColor(Color.GREEN);//声明线并设置颜色
+    private void updatePoints(){
+        int startIndex=oldx.size()-newx.size();
+        if(newx.size()==0){
+            return;
+        }
+        Double tempx=newx.get(0);
+        Double tempy=newy.get(0);
+        Double tempz=newz.get(0);
+        oldx.set(startIndex,tempx);
+        oldy.set(startIndex,tempy);
+        oldz.set(startIndex,tempz);
+        newx.remove(0);
+        newy.remove(0);
+        newz.remove(0);
+        updateLineChart();
+    }
+    private void updateLineChart(){
+        Line line1 = new Line(generateData(oldx)).setColor(Color.RED);//声明线并设置颜色
+        Line line2= new Line(generateData(oldy)).setColor(Color.BLUE);//声明线并设置颜色
+        Line line3= new Line(generateData(oldz)).setColor(Color.GREEN);//声明线并设置颜色
         line1.setCubic(false);//设置是平滑的还是直的
         line1.setHasPoints(false);
         line1.setStrokeWidth(1);
-
         line2.setCubic(false);//设置是平滑的还是直的
         line2.setHasPoints(false);
         line2.setStrokeWidth(1);
-
         line3.setCubic(false);//设置是平滑的还是直的
         line3.setHasPoints(false);
         line3.setStrokeWidth(1);
@@ -87,7 +133,7 @@ public class SpeedFragment extends BaseFragment implements DetailActivity.myInte
         lines.add(line1);
         lines.add(line2);
         lines.add(line3);
-        if(SpdLine!=null){
+        if(SpdLine!=null) {
             SpdLine.setInteractive(true);
             SpdLine.setZoomType(ZoomType.VERTICAL);//设置缩放方向
             LineChartData data = new LineChartData();
@@ -102,7 +148,30 @@ public class SpeedFragment extends BaseFragment implements DetailActivity.myInte
             data.setAxisYLeft(axisY);
             data.setLines(lines);
             SpdLine.setLineChartData(data);
+        }
             //SpdLine.setZoomLevel(0,Collections.min(point.get(1)).intValue() ,5);
+
+    }
+    @Override
+    public void onPointChanged(Vector<Vector<Double>> point) {
+        newx=point.get(4);
+        newy=point.get(5);
+        newz=point.get(6);
+        if(SpdLine==null){
+            return;
+        }
+        if(oldx==null&&oldy==null&&oldz==null){
+            oldx=newx;
+            oldy=newy;
+            oldz=newz;
+            updateLineChart();
+        }
+        else {
+            if(!isAnanimation){
+                upDatePool.scheduleAtFixedRate(task,0,15, TimeUnit.MILLISECONDS);
+            }else {
+                return;
+            }
         }
 
     }
