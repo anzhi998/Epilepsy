@@ -26,6 +26,7 @@ public class DeviceAdapter extends BaseQuickAdapter<BluetoothDevice, BaseViewHol
             helper.setText(R.id.tv_name, "无名");
         } else {
             helper.setText(R.id.tv_name, item.getName());
+            helper.setText(R.id.macAddress,item.getAddress());
         }
 
         ImageView imageView = helper.getView(R.id.iv_device_type);

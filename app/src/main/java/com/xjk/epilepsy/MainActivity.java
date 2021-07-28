@@ -16,6 +16,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
@@ -38,17 +39,18 @@ import com.xjk.epilepsy.Utils.StatusBarUtil;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class MainActivity extends Activity implements View.OnClickListener {
     public static final String action="jason.broadcast.action";
     private  static final int REQUEST_ENABLE_BLUETOOTH = 1;
     public static final int DEFAULT_VIEW = 66;
-
     private static final int REQUEST_CODE_SCAN = 67;
     private static final int REQUEST_CODE_ACTION= 99;
-    private String targetDeviceMac;
+    private String targetDeviceMac="";
     BluetoothAdapter bluetoothAdapter;
     private TextView scanDevices;
     private LinearLayout loadingLay;
@@ -69,21 +71,80 @@ public class MainActivity extends Activity implements View.OnClickListener {
 
         initView();//初始化控件
         checkVersion();//检查版本
-
+        ShowBondedDevices();
         scanBtn=(TextView)findViewById(R.id.scan_devices);
-
     }
     @Override
     protected void onStart() {
 
         super.onStart();
-        //绑定服务获取中间人
-//        Intent intent = new Intent(MainActivity.this, DataService.class);
-//        //conn 通讯频道， BIND_AUTO_CREATE如果服务不存在，会把服务创建出来
-//        boolean ans=bindService(intent,conn,BIND_AUTO_CREATE);
-//        Log.e(TAG,"绑定服务的结果："+String.valueOf(ans));
-    }
 
+    }
+    private void delDeviceInfo(String address){
+        SharedPreferences Info = getSharedPreferences("deviceInfo", MODE_PRIVATE);
+        SharedPreferences.Editor editor = Info.edit();//获取Editor
+        editor.remove(address);
+        editor.commit();
+        Log.i(TAG, "删除设备信息成功");
+    }
+    private void saveDeviceInfo(){
+        SharedPreferences Info = getSharedPreferences("deviceInfo", MODE_PRIVATE);
+        SharedPreferences.Editor editor = Info.edit();//获取Editor
+        //得到Editor后，写入需要保存的数据
+        editor.putString(targetDeviceMac, targetDeviceMac);
+        editor.commit();//提交修改
+        Log.i(TAG, "保存设备信息成功");
+    }
+    private void ShowBondedDevices(){
+        deviceList.clear();
+        SharedPreferences deviceInfo = getSharedPreferences("deviceInfo", MODE_PRIVATE);
+        Map<String,?> deviceL=deviceInfo.getAll();
+        if(deviceL.size()!=0)
+            for(Object j :deviceL.values()){
+                   String tempadd=j.toString();
+                   BluetoothDevice tem=bluetoothAdapter.getRemoteDevice(tempadd);
+                   deviceList.add(tem);
+            }
+        else {
+                Log.e("TAG","没有绑定的设备");
+        }
+        mAdapter = new DeviceAdapter(R.layout.item, deviceList);
+        rv.setLayoutManager(new LinearLayoutManager(this));
+        rv.setAdapter(mAdapter);
+        mAdapter.setOnItemChildClickListener(new BaseQuickAdapter.OnItemChildClickListener() {
+            @Override
+            public void onItemChildClick(BaseQuickAdapter adapter, View view, int position) {
+                //点击时获取状态，如果已经配对过了就不需要在配对
+                if (bluetoothAdapter.isDiscovering()) {
+                    bluetoothAdapter.cancelDiscovery();//停止搜索
+                }
+                //单独开一个线程连接蓝牙设备
+                //连接的过程中是否需要开一个等待的dialog？
+                //连接成功后跳转到详情界面
+                try {
+                    final BluetoothDevice tempdevice = deviceList.get(position);//先获取到当前选中的设备
+                    ((GlobalBleDevice) getApplication()).setGlobalBlueDevice(tempdevice);
+                    Log.i(TAG, "想要连接的蓝牙装置是" + tempdevice.getName());
+                    //TODO,初始化TCP连接
+                    Intent in = new Intent(MainActivity.this, DetailActivity.class);
+                    startActivityForResult(in, REQUEST_CODE_ACTION);
+                } catch (Exception e) {
+                    showMsg("请重新搜索设备");
+                }
+            }
+        });
+        mAdapter.setOnItemLongClickListener(new BaseQuickAdapter.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(BaseQuickAdapter adapter, View view, int position) {
+                BluetoothDevice toDisBond=deviceList.get(position);
+                delDeviceInfo(toDisBond.getAddress());
+                deviceList.remove(toDisBond);
+                ShowBondedDevices();
+                //createOrRemoveBond(2,toDisBond);
+                return true;
+            }
+        });
+    }
 
 
 
@@ -132,6 +193,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         bluetoothReceiver = new BluetoothReceiver();//实例化广播接收器
         registerReceiver(bluetoothReceiver, intentFilter);//注册广播接收器
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();//获取蓝牙适配器
+        mAdapter = new DeviceAdapter(R.layout.item, deviceList);
     }
     /**
      * 消息提示
@@ -145,26 +207,13 @@ public class MainActivity extends Activity implements View.OnClickListener {
     @Override
     public void onClick(View v) {
         if (v.getId()==R.id.scan_devices){
-            if(bluetoothAdapter.isEnabled()){
-                if(mAdapter !=null){
-                    deviceList.clear();
-                    mAdapter.notifyDataSetChanged();
-                }
-                bluetoothAdapter.startDiscovery();
-                v.setClickable(false);
-            }else {
-                Intent intent=new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-                startActivityForResult(intent, REQUEST_ENABLE_BLUETOOTH);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                this.requestPermissions(
+                        new String[]{Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE},
+                        DEFAULT_VIEW);
             }
-        }
-    }
-    public void onClickQrScan(View view){
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            this.requestPermissions(
-                    new String[]{Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE},
-                    DEFAULT_VIEW);
-        }
 
+        }
     }
 
     /**
@@ -186,15 +235,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
                 }
                 break;
             case REQUEST_CODE_ACTION:
-                if(resultCode==REQUEST_CODE_ACTION)
-                {
-                    if(bluetoothAdapter.isEnabled()){
-                        if(mAdapter !=null){
-                            deviceList.clear();
-                            mAdapter.notifyDataSetChanged();
-                        }
-                    }
-                }
+                ShowBondedDevices();
                 break;
             case REQUEST_CODE_SCAN:
                 Object obj = data.getParcelableExtra(ScanUtil.RESULT);
@@ -203,10 +244,12 @@ public class MainActivity extends Activity implements View.OnClickListener {
                         targetDeviceMac=((HmsScan) obj).getOriginalValue();
                         Log.i(TAG,"扫描得到的mac地址："+targetDeviceMac);
                         BluetoothDevice tempdevice=bluetoothAdapter.getRemoteDevice(targetDeviceMac);
-                        createOrRemoveBond(1,tempdevice);
-                        Intent in = new Intent(MainActivity.this,DetailActivity.class);
+//                        createOrRemoveBond(1,tempdevice);
+                        saveDeviceInfo();//保存到本地
+                        ShowBondedDevices();
+//                        Intent in = new Intent(MainActivity.this,DetailActivity.class);
                         ((GlobalBleDevice) getApplication()).setGlobalBlueDevice(tempdevice);
-                        startActivityForResult(in,REQUEST_CODE_ACTION);
+//                        startActivityForResult(in,REQUEST_CODE_ACTION);
                     }
                     return;
                 }
@@ -257,7 +300,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
         if (deviceList.indexOf(device) == -1) {//防止重复添加
-            if (device.getName() != null) {//过滤掉设备名称为null的设备
+            if (device.getAddress().equals(targetDeviceMac)) {//过滤掉设备名称为null的设备
                 deviceList.add(device);
             }
         }
@@ -265,43 +308,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
         rv.setLayoutManager(new LinearLayoutManager(context));
         rv.setAdapter(mAdapter);
 
-        mAdapter.setOnItemChildClickListener(new BaseQuickAdapter.OnItemChildClickListener() {
-            @Override
-            public void onItemChildClick(BaseQuickAdapter adapter, View view, int position) {
-                //点击时获取状态，如果已经配对过了就不需要在配对
-                bluetoothAdapter.cancelDiscovery();//停止搜索
-                //单独开一个线程连接蓝牙设备
-                //连接的过程中是否需要开一个等待的dialog？
-                //连接成功后跳转到详情界面
-                try{
-                    final BluetoothDevice tempdevice=deviceList.get(position);//先获取到当前选中的设备
-                    if(tempdevice.getName().contains("Bio")){
-                        Log.i(TAG,"想要连接的蓝牙装置是"+tempdevice.getName());
-                        createOrRemoveBond(1,tempdevice);
-                        //TODO,初始化TCP连接
-//                    //蓝牙连接设备
-//                    new Thread(new Runnable() {
-//                        @Override
-//                        public void run() {
-//                            SystemClock.sleep(100);
-//                            myBinder.connectSoc(); //连接TCP服务器
-//                            SystemClock.sleep(100);
-//                            myBinder.connectDev(tempdevice); //连接蓝牙设备
-//                        }
-//                    }).start();
-                        Intent in = new Intent(MainActivity.this,DetailActivity.class);
-                        ((GlobalBleDevice) getApplication()).setGlobalBlueDevice(tempdevice);
-                        startActivityForResult(in,REQUEST_CODE_ACTION);
-                    }
-                    else{
-                        showMsg("不支持该设备");
-                    }
-                }catch (Exception e){
-                    showMsg("请重新搜索设备");
-                }
-
-            }
-        });
     }
     private void getBondedDevice() {
         Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
@@ -327,6 +333,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
                     method = BluetoothDevice.class.getMethod("removeBond");
                     method.invoke(device);
                     deviceList.remove(device);//清除列表中已经取消了配对的设备
+                    ShowBondedDevices();
                     break;
             }
         } catch (NoSuchMethodException e) {

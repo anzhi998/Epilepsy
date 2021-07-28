@@ -28,6 +28,9 @@ public class LinechartFragment extends BaseFragment implements DetailActivity.my
     private LineChartView V1Line;
     private LineChartView V2Line;
     private LineChartView V3Line;
+    private ArrayList<PointValue> oldV1;
+    private ArrayList<PointValue> oldV2;
+    private ArrayList<PointValue> oldV3;
     @Override
     protected View initView() {
         View view = View.inflate(mContext, R.layout.fragment_linechart,null);
@@ -66,15 +69,10 @@ public class LinechartFragment extends BaseFragment implements DetailActivity.my
 
     }
 
-
-    @Override
-    public void onPointChanged(ArrayList<ArrayList<Double>> point) {
-        ArrayList<PointValue> v1data=generateData(point.get(1));
-        ArrayList<PointValue> v2data=generateData(point.get(2));
-        ArrayList<PointValue> v3data=generateData(point.get(3));
-        Line line1 = new Line(v1data).setColor(Color.RED);//声明线并设置颜色
-        Line line2= new Line(v2data).setColor(Color.RED);//声明线并设置颜色
-        Line line3= new Line(v3data).setColor(Color.RED);//声明线并设置颜色
+    private void updateLineChart(){
+        Line line1 = new Line(oldV1).setColor(Color.RED);//声明线并设置颜色
+        Line line2= new Line(oldV2).setColor(Color.RED);//声明线并设置颜色
+        Line line3= new Line(oldV3).setColor(Color.RED);//声明线并设置颜色
         line1.setCubic(false);//设置是平滑的还是直的
         line1.setHasPoints(false);
         line1.setStrokeWidth(1);
@@ -107,9 +105,9 @@ public class LinechartFragment extends BaseFragment implements DetailActivity.my
 //            v.bottom=-7;
 //            V1Line.setMaximumViewport(v);
             V1Line.setLineChartData(data);
-            int midY=Collections.max(point.get(1)).intValue()+Collections.min(point.get(1)).intValue();
-            midY=(int)midY/2;
-            V1Line.setZoomLevel(500,Collections.min(point.get(1)).intValue() ,5);
+//            int midY=Collections.max(point.get(1)).intValue()+Collections.min(point.get(1)).intValue();
+//            midY=(int)midY/2;
+//            V1Line.setZoomLevel(500,Collections.min(point.get(1)).intValue() ,5);
 
         }
 
@@ -146,9 +144,30 @@ public class LinechartFragment extends BaseFragment implements DetailActivity.my
             data3.setAxisYLeft(axisY);
             data3.setLines(lines3);
             V3Line.setLineChartData(data3);
-            int midY=Collections.max(point.get(3)).intValue()+Collections.min(point.get(3)).intValue();
-            midY=(int)midY/2;
-            //V3Line.setZoomLevel(500, midY,5);
+//            int midY=Collections.max(point.get(3)).intValue()+Collections.min(point.get(3)).intValue();
+//            midY=(int)midY/2;
+//            //V3Line.setZoomLevel(500, midY,5);
         }
+    }
+    @Override
+    public void onPointChanged(ArrayList<ArrayList<Double>> point) {
+        ArrayList<PointValue> v1data=generateData(point.get(1));
+        ArrayList<PointValue> v2data=generateData(point.get(2));
+        ArrayList<PointValue> v3data=generateData(point.get(3));
+        if(oldV1==null&&oldV2==null&&oldV3==null){
+            oldV1=v1data;
+            oldV2=v2data;
+            oldV3=v3data;
+        }else{
+            //动态更新
+            for (int i=0;i<v1data.size();i++){
+                oldV1.set(i,v1data.get(i));
+                oldV2.set(i,v3data.get(i));
+                oldV3.set(i,v3data.get(i));
+                updateLineChart();
+            }
+        }
+
+
     }
 }

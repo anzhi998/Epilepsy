@@ -26,14 +26,6 @@
             android:text="设备列表"
             android:textColor="#000"
             android:textSize="25dp" />
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:gravity="center"
-            android:text="扫码绑定设备"
-            android:id="@+id/btnScan"
-            android:onClick="onClickQrScan">
-        </Button>
 
 
     </androidx.appcompat.widget.Toolbar>
@@ -79,11 +71,10 @@
     <TextView
         android:id="@+id/scan_devices"
         android:layout_width="match_parent"
-        android:layout_height="50dp"
+        android:layout_height="70dp"
         android:background="?android:attr/selectableItemBackground"
         android:gravity="center"
-        android:text="寻找设备"
+        android:text="扫码绑定设备"
         android:textColor="@color/black"
         android:textSize="25dp"/>
-
 </LinearLayout>

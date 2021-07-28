@@ -26,6 +26,14 @@
             android:layout_width="0dp"
             android:layout_weight="1"
             android:layout_height="wrap_content"/>
+        <TextView
+
+            android:id="@+id/macAddress"
+            android:text="13123123123123213"
+            android:textColor="#6699CC"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"/>
 
 
     </LinearLayout>
