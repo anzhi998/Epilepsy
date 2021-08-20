@@ -29,7 +29,7 @@
         <TextView
 
             android:id="@+id/macAddress"
-            android:text="13123123123123213"
+            android:text="MAC ADDRESS ERROR"
             android:textColor="#6699CC"
             android:layout_width="0dp"
             android:layout_weight="1"

@@ -21,9 +21,8 @@ public class DeviceAdapter extends BaseQuickAdapter<BluetoothDevice, BaseViewHol
 
     @Override
     protected void convert(BaseViewHolder helper, BluetoothDevice item) {
-
         if (item.getName() == null) {
-            helper.setText(R.id.tv_name, "无名");
+            helper.setText(R.id.tv_name, "错误的设备");
         } else {
             helper.setText(R.id.tv_name, item.getName());
             helper.setText(R.id.macAddress,item.getAddress());
@@ -32,12 +31,12 @@ public class DeviceAdapter extends BaseQuickAdapter<BluetoothDevice, BaseViewHol
         ImageView imageView = helper.getView(R.id.iv_device_type);
         getDeviceType(item.getBluetoothClass().getMajorDeviceClass(), imageView);
         //添加item点击事件
-        if(item.getName().contains("Bio"))
-        {
-            imageView.setImageResource(R.mipmap.icon_wearable_devices);
-        }
+        imageView.setImageResource(R.mipmap.icon_wearable_devices);
+//        if(item.getName().contains("Bio"))
+//        {
+//            imageView.setImageResource(R.mipmap.icon_wearable_devices);
+//        }
         helper.addOnClickListener(R.id.item_device);
-
     }
 
     /**
