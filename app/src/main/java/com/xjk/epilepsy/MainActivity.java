@@ -246,12 +246,16 @@ public class MainActivity extends Activity implements View.OnClickListener {
                     if (!TextUtils.isEmpty(((HmsScan) obj).getOriginalValue())) {
                         targetDeviceMac=((HmsScan) obj).getOriginalValue();
                         Log.i(TAG,"扫描得到的mac地址："+targetDeviceMac);
-                        BluetoothDevice tempdevice=bluetoothAdapter.getRemoteDevice(targetDeviceMac);
+                        try{
+                            BluetoothDevice tempdevice=bluetoothAdapter.getRemoteDevice(targetDeviceMac);
+                            saveDeviceInfo();//保存到本地
+                            ShowBondedDevices();
+                            ((GlobalBleDevice) getApplication()).setGlobalBlueDevice(tempdevice);
+                        }catch (Exception e){
+                            Log.e(TAG,"错误的MAC地址");
+                        }
+                       // BluetoothDevice tempdevice=bluetoothAdapter.getRemoteDevice(targetDeviceMac);
 //                        createOrRemoveBond(1,tempdevice);
-                        saveDeviceInfo();//保存到本地
-                        ShowBondedDevices();
-//                        Intent in = new Intent(MainActivity.this,DetailActivity.class);
-                        ((GlobalBleDevice) getApplication()).setGlobalBlueDevice(tempdevice);
 //                        startActivityForResult(in,REQUEST_CODE_ACTION);
                     }
                     return;

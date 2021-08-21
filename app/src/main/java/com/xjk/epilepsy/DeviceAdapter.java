@@ -26,17 +26,13 @@ public class DeviceAdapter extends BaseQuickAdapter<BluetoothDevice, BaseViewHol
         } else {
             helper.setText(R.id.tv_name, item.getName());
             helper.setText(R.id.macAddress,item.getAddress());
+            ImageView imageView = helper.getView(R.id.iv_device_type);
+            getDeviceType(item.getBluetoothClass().getMajorDeviceClass(), imageView);
+            //添加item点击事件
+            imageView.setImageResource(R.mipmap.icon_wearable_devices);
+            helper.addOnClickListener(R.id.item_device);
         }
 
-        ImageView imageView = helper.getView(R.id.iv_device_type);
-        getDeviceType(item.getBluetoothClass().getMajorDeviceClass(), imageView);
-        //添加item点击事件
-        imageView.setImageResource(R.mipmap.icon_wearable_devices);
-//        if(item.getName().contains("Bio"))
-//        {
-//            imageView.setImageResource(R.mipmap.icon_wearable_devices);
-//        }
-        helper.addOnClickListener(R.id.item_device);
     }
 
     /**

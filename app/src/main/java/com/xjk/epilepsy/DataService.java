@@ -190,7 +190,8 @@ public class DataService extends Service {
                             sendBeatData();
                         }
                     } catch (IOException e) {
-                        Log.i(TAG, " ===> socket连接失败");
+                        Log.i(TAG, " ===> socket第一次连接失败");
+                        releaseSocket();
                     }
                 }
             });
@@ -430,6 +431,7 @@ public class DataService extends Service {
         }
         isBLEConnect=false;      // 更新蓝牙连接状态
         Log.e(TAG, "StepUnexpected. BlueTooth device is lost");
+        updateStatus();
 
         if(bluetoothDevice != null){   //说明这里蓝牙断开不是主动断开的，需要重新连接
             try{
@@ -448,7 +450,7 @@ public class DataService extends Service {
         Intent intent=new Intent();
         intent.setAction("com.xjk.servicecallback.content");
         intent.putExtra("data",data);
-        Log.e(TAG,"广播数据包："+data);
+        Log.e(TAG,"广播数据包：");
         sendBroadcast(intent);
     }
 
