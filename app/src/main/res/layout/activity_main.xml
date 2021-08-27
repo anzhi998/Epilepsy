@@ -26,7 +26,13 @@
             android:text="设备列表"
             android:textColor="#000"
             android:textSize="25dp" />
-
+        <Button
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:drawableLeft="@mipmap/icons_qr_code"
+            android:background="@android:color/transparent"
+            android:onClick="onClick_scan">
+        </Button>
 
     </androidx.appcompat.widget.Toolbar>
 
@@ -74,7 +80,9 @@
         android:layout_height="70dp"
         android:background="?android:attr/selectableItemBackground"
         android:gravity="center"
-        android:text="扫码绑定设备"
+        android:text="搜索设备"
+        android:layout_gravity="center"
+        android:drawableLeft="@mipmap/icons_earch"
         android:textColor="@color/black"
         android:textSize="25dp"/>
 </LinearLayout>

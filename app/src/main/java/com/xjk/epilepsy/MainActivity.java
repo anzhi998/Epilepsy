@@ -67,8 +67,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         StatusBarUtil.StatusBarLightMode(this);//状态栏黑色字体
-
-
         initView();//初始化控件
         checkVersion();//检查版本
         ShowBondedDevices();
@@ -204,15 +202,31 @@ public class MainActivity extends Activity implements View.OnClickListener {
         Toast.makeText(this, msg, Toast.LENGTH_SHORT).show();
     }
 
+
+
+    public void onClick_scan(View v){
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            this.requestPermissions(
+                    new String[]{Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE},
+                    DEFAULT_VIEW);
+        }
+    }
     @Override
     public void onClick(View v) {
         if (v.getId()==R.id.scan_devices){
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                this.requestPermissions(
-                        new String[]{Manifest.permission.CAMERA, Manifest.permission.READ_EXTERNAL_STORAGE},
-                        DEFAULT_VIEW);
+            if(bluetoothAdapter.isEnabled()){
+                if(mAdapter !=null){
+                    deviceList.clear();
+                    mAdapter.notifyDataSetChanged();
+                }
+                bluetoothAdapter.startDiscovery();
+                v.setClickable(false);
+            }else {
+                Intent intent=new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                startActivityForResult(intent, REQUEST_ENABLE_BLUETOOTH);
             }
-
+        }else {
+            showMsg("该设备不支持蓝牙");
         }
     }
 
@@ -307,7 +321,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
         BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
         if (deviceList.indexOf(device) == -1) {//防止重复添加
-            if (device.getAddress().equals(targetDeviceMac)) {//过滤掉设备名称为null的设备
+            if (device.getAddress()!=null) {//过滤掉设备名称为null的设备
                 deviceList.add(device);
             }
         }
