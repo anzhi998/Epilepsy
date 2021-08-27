@@ -321,13 +321,41 @@ public class MainActivity extends Activity implements View.OnClickListener {
         BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
 
         if (deviceList.indexOf(device) == -1) {//防止重复添加
-            if (device.getAddress()!=null) {//过滤掉设备名称为null的设备
+            if (device.getName()!=null) {//过滤掉设备名称为null的设备
                 deviceList.add(device);
             }
         }
         mAdapter = new DeviceAdapter(R.layout.item, deviceList);
         rv.setLayoutManager(new LinearLayoutManager(context));
         rv.setAdapter(mAdapter);
+        mAdapter.setOnItemChildClickListener(new BaseQuickAdapter.OnItemChildClickListener() {
+            @Override
+            public void onItemChildClick(BaseQuickAdapter adapter, View view, int position) {
+                //点击时获取状态，如果已经配对过了就不需要在配对
+                if (bluetoothAdapter.isDiscovering()) {
+                    bluetoothAdapter.cancelDiscovery();//停止搜索
+                }
+                //单独开一个线程连接蓝牙设备
+                //连接的过程中是否需要开一个等待的dialog？
+                //连接成功后跳转到详情界面
+                try {
+                    final BluetoothDevice tempdevice = deviceList.get(position);//先获取到当前选中的设备
+                    if(tempdevice.getName().contains("Bio")){
+                        targetDeviceMac=tempdevice.getAddress();
+                        saveDeviceInfo();
+                        //ShowBondedDevices();
+                        showMsg("绑定设备成功");
+                        ((GlobalBleDevice) getApplication()).setGlobalBlueDevice(tempdevice);
+                        Intent in = new Intent(MainActivity.this, DetailActivity.class);
+                        startActivityForResult(in, REQUEST_CODE_ACTION);
+                    }else{
+                        showMsg("请选择正确的设备");
+                    }
+                } catch (Exception e) {
+                    showMsg("请重新搜索设备");
+                }
+            }
+        });
 
     }
     private void getBondedDevice() {
