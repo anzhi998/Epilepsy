@@ -71,7 +71,6 @@ public class BreChartFragment extends BaseFragment implements DetailActivity.myI
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        upDatePool = new ScheduledThreadPoolExecutor(2);
     }
     Runnable task=new Runnable() {
         @Override
@@ -151,7 +150,7 @@ public class BreChartFragment extends BaseFragment implements DetailActivity.myI
         }
         else {
             if(!isAnanimation){
-                upDatePool.scheduleAtFixedRate(task,0,10,TimeUnit.MILLISECONDS);
+
                 isAnanimation=true;
             }else {
                 return;
@@ -165,6 +164,17 @@ public class BreChartFragment extends BaseFragment implements DetailActivity.myI
         if(!upDatePool.isShutdown()){
             upDatePool.purge();
             upDatePool.shutdown();
+        }
+    }
+
+    @Override
+    public void needDraw(boolean need) {
+        if(need){
+            upDatePool = new ScheduledThreadPoolExecutor(2);
+            isAnanimation=false;
+        }else{
+            upDatePool.purge();
+            upDatePool.shutdownNow();
         }
     }
 }

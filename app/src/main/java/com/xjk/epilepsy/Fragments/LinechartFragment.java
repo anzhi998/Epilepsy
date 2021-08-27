@@ -117,7 +117,7 @@ public class LinechartFragment extends BaseFragment implements DetailActivity.my
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        upDatePool = new ScheduledThreadPoolExecutor(2);
+
     }
 
     private void updateLineChart(){
@@ -229,6 +229,18 @@ public class LinechartFragment extends BaseFragment implements DetailActivity.my
         if(!upDatePool.isShutdown()){
             upDatePool.purge();
             upDatePool.shutdown();
+        }
+    }
+
+    @Override
+    public void needDraw(boolean need) {
+        if(need){
+            upDatePool = new ScheduledThreadPoolExecutor(2);
+            isAnanimation=false;
+           // upDatePool.scheduleAtFixedRate(task,0,10,TimeUnit.MILLISECONDS);
+        }else{
+            upDatePool.purge();
+            upDatePool.shutdownNow();
         }
     }
 }

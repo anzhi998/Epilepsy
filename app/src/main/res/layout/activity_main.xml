@@ -77,12 +77,12 @@
     <TextView
         android:id="@+id/scan_devices"
         android:layout_width="match_parent"
-        android:layout_height="70dp"
+        android:layout_height="wrap_content"
         android:background="?android:attr/selectableItemBackground"
         android:gravity="center"
         android:text="搜索设备"
         android:layout_gravity="center"
-        android:drawableLeft="@mipmap/icons_earch"
+        android:drawableTop="@mipmap/icons_earch"
         android:textColor="@color/black"
         android:textSize="25dp"/>
 </LinearLayout>

@@ -11,6 +11,7 @@ import android.content.ServiceConnection;
 import android.os.Build;
 import android.os.Bundle;
 
+import com.suke.widget.SwitchButton;
 import com.xjk.epilepsy.Fragments.BreChartFragment;
 import com.xjk.epilepsy.Fragments.LinechartFragment;
 import com.xjk.epilepsy.Fragments.SpeedFragment;
@@ -60,6 +61,7 @@ public class DetailActivity extends FragmentActivity {
     private StringBuffer purePointBuff;
     private ContentReceiver mDataReceiver ;
     private DataService.MyBinder myBinder;  //代理人
+    private com.suke.widget.SwitchButton switchButton;
     private MyConn conn;
     private void doRegusterReceiver(){
         mDataReceiver=new ContentReceiver();
@@ -204,8 +206,6 @@ public class DetailActivity extends FragmentActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //初始化线程池
-        mThreadPool = new ScheduledThreadPoolExecutor(3);
         setContentView(R.layout.activity_detail);
         dataBuff=new StringBuffer();
         purePointBuff=new StringBuffer();
@@ -218,9 +218,31 @@ public class DetailActivity extends FragmentActivity {
         btn_ble=(Button)findViewById(R.id.btn_ble);
         btn_socket=(Button)findViewById(R.id.btn_socket);
         doRegusterReceiver();
-        mThreadPool.scheduleAtFixedRate(task,3,drawLineInterval,TimeUnit.SECONDS);
-        //mThreadPool.scheduleAtFixedRate(task_clean,5,5,TimeUnit.SECONDS);
-        mThreadPool.scheduleAtFixedRate(task_deal,2,parseStringInterval,TimeUnit.MILLISECONDS);
+
+        switchButton =(com.suke.widget.SwitchButton) findViewById(R.id.switch_btn);
+        switchButton.toggle(true);
+        switchButton.setShadowEffect(true);
+        switchButton.setOnCheckedChangeListener(new SwitchButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(SwitchButton view, boolean isChecked) {
+                sendContentBroadcast(isChecked);//通知service
+                if(isChecked){
+
+                    mThreadPool = new ScheduledThreadPoolExecutor(3);
+                    //如果需要画图
+                    mThreadPool.scheduleAtFixedRate(task,3,drawLineInterval,TimeUnit.SECONDS);
+                    //mThreadPool.scheduleAtFixedRate(task_clean,5,5,TimeUnit.SECONDS);
+                    mThreadPool.scheduleAtFixedRate(task_deal,2,parseStringInterval,TimeUnit.MILLISECONDS);
+                }else{
+                    mThreadPool.purge();
+                    mThreadPool.shutdownNow();
+                }
+                for(int i=0;i<interList.size();i++){
+                    interList.get(i).needDraw(isChecked);
+                }
+            }
+        });
+        switchButton.setChecked(false);
     }
 
     private BaseFragment getFragment() {
@@ -286,7 +308,12 @@ public class DetailActivity extends FragmentActivity {
 
         }
     }
-
+    protected void sendContentBroadcast(boolean data){
+        Intent intent=new Intent();
+        intent.setAction("com.xjk.detailpage.content");
+        intent.putExtra("draw",data);
+        sendBroadcast(intent);
+    }
     private void initFragment() {
         mBaseFragment = new ArrayList<>();
         interList   =   new ArrayList<>();

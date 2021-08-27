@@ -8,7 +8,10 @@ import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
@@ -39,8 +42,9 @@ public class DataService extends Service {
     public static  BluetoothDevice bluetoothDevice;        //目标蓝牙设备
     public static  BluetoothGatt gatt;                     //蓝牙协议栈包括GATT
 
+    private  boolean needDraw=false;
 
-
+    private myReceiver mReceiver;
     /*默认重连*/
     private static final boolean isReConnect = true;
 
@@ -147,7 +151,7 @@ public class DataService extends Service {
         socket = null;
         timer=null;
         task=null;
-
+        doRegusterReceiver();
         super.onCreate();
     }
 
@@ -375,7 +379,9 @@ public class DataService extends Service {
 
                     String hex=ConvertUtils.bytesToHexString(values);
                     Log.i(TAG,"蓝牙收到数据，长度为："+String.valueOf(hex.length()));
-                    sendContentBroadcast(hex);
+
+                    if(needDraw) sendContentBroadcast(hex);
+
                     //8.  将数组转成 string 用于传输
                     tcpStrBuff.append(hex);
                     String str = tcpStrBuff.toString();        // 拼接后的 str
@@ -453,5 +459,15 @@ public class DataService extends Service {
         Log.e(TAG,"广播数据包：");
         sendBroadcast(intent);
     }
-
+    public class myReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            needDraw=intent.getBooleanExtra("draw",false);
+        }
+    };
+    private void doRegusterReceiver(){
+        mReceiver=new myReceiver();
+        IntentFilter filter= new IntentFilter("com.xjk.detailpage.content");
+        registerReceiver(mReceiver,filter);
+    }
 }

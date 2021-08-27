@@ -96,7 +96,7 @@ public class SpeedFragment extends BaseFragment implements DetailActivity.myInte
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        upDatePool=new ScheduledThreadPoolExecutor(2);
+
     }
 
     private void updatePoints(){
@@ -174,5 +174,17 @@ public class SpeedFragment extends BaseFragment implements DetailActivity.myInte
             }
         }
 
+    }
+
+    @Override
+    public void needDraw(boolean need) {
+        if(need){
+            upDatePool=new ScheduledThreadPoolExecutor(2);
+            isAnanimation=false;
+        }
+        else{
+            upDatePool.purge();
+            upDatePool.shutdownNow();
+        }
     }
 }

@@ -51,5 +51,6 @@ public abstract class BaseFragment extends Fragment {
     }
 
     public abstract void onPointChanged(Vector<Vector<Double>> point);
+    public abstract void needDraw(boolean need);
 }
 
