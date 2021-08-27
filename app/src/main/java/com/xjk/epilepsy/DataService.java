@@ -163,6 +163,7 @@ public class DataService extends Service {
 
     @Override
     public void onDestroy() {
+        unregisterReceiver(mReceiver);
         super.onDestroy();
     }
     //更新 状态显示（socket连接状态+蓝牙gatt连接状态）
