@@ -226,10 +226,13 @@ public class LinechartFragment extends BaseFragment implements DetailActivity.my
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if(!upDatePool.isShutdown()){
-            upDatePool.purge();
-            upDatePool.shutdown();
-        }
+        try {
+            if(!upDatePool.isShutdown()){
+                upDatePool.purge();
+                upDatePool.shutdown();
+            }
+        }catch (Exception e){}
+
     }
 
     @Override

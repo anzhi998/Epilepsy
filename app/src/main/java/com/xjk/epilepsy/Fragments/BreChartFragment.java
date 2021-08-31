@@ -161,10 +161,13 @@ public class BreChartFragment extends BaseFragment implements DetailActivity.myI
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if(!upDatePool.isShutdown()){
-            upDatePool.purge();
-            upDatePool.shutdown();
-        }
+        try {
+            if(!upDatePool.isShutdown()){
+                upDatePool.purge();
+                upDatePool.shutdown();
+            }
+        }catch (Exception e){}
+
     }
 
     @Override

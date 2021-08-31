@@ -31,6 +31,7 @@
             android:textSize="12sp" />
         <TextView
             android:layout_width="wrap_content"
+            android:id="@+id/text_drawText"
             android:layout_height="match_parent"
             android:text="实时绘图"
             android:layout_toLeftOf="@+id/switch_btn"
@@ -40,14 +41,69 @@
         <com.suke.widget.SwitchButton
             android:id="@+id/switch_btn"
             android:layout_width="80dp"
-            android:layout_height="match_parent"
+            android:layout_height="44dp"
+            android:layout_marginTop="10dp"
             android:layout_alignParentRight="true"/>
+
+        <ImageView
+            android:id="@+id/img_upload"
+            android:layout_width="wrap_content"
+            android:layout_height="20dp"
+            android:src="@mipmap/ic_up"
+            android:layout_toRightOf="@id/btn_ble"
+            android:layout_marginLeft="5dp"
+            android:layout_marginTop="5dp"/>
+        <ImageView
+            android:id="@+id/img_download"
+            android:layout_width="wrap_content"
+            android:layout_height="20dp"
+            android:src="@mipmap/ic_down"
+            android:layout_toRightOf="@+id/btn_ble"
+            android:layout_below="@id/img_upload"
+            android:layout_marginLeft="5dp"
+            android:layout_marginTop="5dp"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="20dp"
+            android:id="@+id/text_upspd"
+            android:layout_toRightOf="@id/img_upload"
+            android:text="0 k/s"
+            android:layout_marginTop="5dp"/>
+        <TextView
+
+            android:layout_width="wrap_content"
+            android:layout_height="20dp"
+            android:id="@+id/text_downspd"
+            android:layout_toRightOf="@id/img_download"
+            android:layout_below="@+id/text_upspd"
+            android:text="0 k/s"
+            android:layout_marginTop="5dp"/>
+        <ImageView
+            android:id="@+id/img_power"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@mipmap/power5"
+            android:layout_toLeftOf="@+id/text_power"
+            android:layout_marginRight="10dp"
+            android:layout_marginLeft="10dp"
+            android:layout_centerVertical="true"/>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/text_power"
+            android:layout_toLeftOf="@id/text_drawText"
+            android:layout_marginRight="300dp"
+            android:text="100%"
+            android:textSize="20dp"
+            android:layout_centerVertical="true"/>
     </RelativeLayout>
     <FrameLayout
         android:id="@+id/fl_content"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1" >
+
+    </FrameLayout>
 
     <RadioGroup
         android:id="@+id/rg_main"

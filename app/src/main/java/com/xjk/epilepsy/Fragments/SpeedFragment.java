@@ -177,6 +177,18 @@ public class SpeedFragment extends BaseFragment implements DetailActivity.myInte
     }
 
     @Override
+    public void onDestroy() {
+        super.onDestroy();
+        try {
+            if(!upDatePool.isShutdown()){
+                upDatePool.purge();
+                upDatePool.shutdown();
+            }
+        }catch (Exception e){}
+
+    }
+
+    @Override
     public void needDraw(boolean need) {
         if(need){
             upDatePool=new ScheduledThreadPoolExecutor(2);

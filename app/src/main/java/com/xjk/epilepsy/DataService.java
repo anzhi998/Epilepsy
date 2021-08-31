@@ -25,6 +25,7 @@ import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 
 import com.xjk.epilepsy.Utils.ConvertUtils;
+import com.xjk.epilepsy.Utils.StringParse;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -35,22 +36,28 @@ import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 
 public class DataService extends Service {
     public static final String TAG = "BLE转TCP中继器";
+    private final int SPEEDUPDATE=455;
+    private final int POWERUPDATE=456;
     public static  BluetoothDevice bluetoothDevice;        //目标蓝牙设备
     public static  BluetoothGatt gatt;                     //蓝牙协议栈包括GATT
-
+    private long bit_get_size=0;
+    private long bit_send_size=0;
+    private int currentPower=100;
     private  boolean needDraw=false;
-
     private myReceiver mReceiver;
+    private final String HEAD="00AA00CC";
     /*默认重连*/
     private static final boolean isReConnect = true;
 
     //线程池   采用线程池关闭，不用一个个开线程
     private ExecutorService mThreadPool;
-
+    private ScheduledThreadPoolExecutor speedThreadPool;
     /*数据流*/
     OutputStream outputStream;
 
@@ -79,6 +86,8 @@ public class DataService extends Service {
 
     public static  interface  CallBack{
         void onStateChanged(boolean socState,boolean bleState);
+        void onSpeedChanged(double up_Spd,double down_Spd);
+        void onPowerChanged(int power);
     }
     public  void setCallBack(CallBack callBack){
         this.callBack=callBack;
@@ -116,7 +125,17 @@ public class DataService extends Service {
             disconnectSocket();
         }
     }
-
+    Runnable task_speedUpdate=new Runnable() {
+        @Override
+        public void run() {
+            Message me=new Message();
+            me.what=SPEEDUPDATE;
+            handler.sendMessage(me);
+        }
+    };
+    private void updatePower(){
+        callBack.onPowerChanged(currentPower);
+    }
     //ui主线程
     private Handler handler = new Handler(new Handler.Callback() {
         @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
@@ -125,6 +144,12 @@ public class DataService extends Service {
             switch (message.what) {
                 case 188:
                     doUpdate();
+                    break;
+                case SPEEDUPDATE:
+                    sendSpeedBroadcast();
+                    break;
+                case POWERUPDATE:
+                    updatePower();
                     break;
                 default:
                     break;
@@ -143,7 +168,8 @@ public class DataService extends Service {
     public void onCreate() {
         //初始化线程池
         mThreadPool = Executors.newCachedThreadPool();
-
+        speedThreadPool = new ScheduledThreadPoolExecutor(2);
+        speedThreadPool.scheduleAtFixedRate(task_speedUpdate,0,4, TimeUnit.SECONDS);
         //初始化全局变量
 //        adapter=null;               //蓝牙适配器
         //       bluetoothDevice=null;        //目标蓝牙设备
@@ -173,6 +199,16 @@ public class DataService extends Service {
             public void run() {
                 Message message = new Message();
                 message.what = 188;             //触发 handle UI更新线程
+                handler.sendMessage(message);
+            }
+        });
+    }
+    private void updatePowerRate(){
+        mThreadPool.execute(new Runnable() {
+            @Override
+            public void run() {
+                Message message = new Message();
+                message.what = POWERUPDATE;             //触发 handle UI更新线程
                 handler.sendMessage(message);
             }
         });
@@ -216,6 +252,7 @@ public class DataService extends Service {
                         if(outputStream == null){outputStream = socket.getOutputStream();}
                         Log.i(TAG, "发送心跳包");
                         outputStream.write(("").getBytes("UTF-8"));
+
                         outputStream.flush();
                     }catch (IOException e) {
                         /*发送失败说明socket断开了或者出现了其他错误*/
@@ -377,16 +414,26 @@ public class DataService extends Service {
                     //发送数据给蓝牙后，蓝牙返回数据在这里
                     //7.  获取的是 byte 整数数组
                     final byte[] values = characteristic.getValue();
-
+                    bit_get_size+=values.length*8;
                     String hex=ConvertUtils.bytesToHexString(values);
-                    Log.i(TAG,"蓝牙收到数据，长度为："+String.valueOf(hex.length()));
+                    int startIndex=hex.indexOf(HEAD);
+                    if(startIndex!=-1){
 
+                      String powerStr= hex.substring(startIndex+16,startIndex+18);
+                      if(powerStr.equals("20")){
+                          //说明找到了电量信息
+                          String power=hex.substring(startIndex+18,startIndex+22);
+                          int poweRate= StringParse.string2power(power);
+                          currentPower=poweRate;
+                          updatePowerRate();
+                        }
+                    }
                     if(needDraw) sendContentBroadcast(hex);
-
                     //8.  将数组转成 string 用于传输
                     tcpStrBuff.append(hex);
                     String str = tcpStrBuff.toString();        // 拼接后的 str
                     int length = str.length();                 // 拼接后的 str 长度
+
                     if(length>2000){           //缓存2k字节数据，一次socket发送
 
                         // socket发送数据
@@ -394,6 +441,13 @@ public class DataService extends Service {
                             if(socket!=null && !socket.isClosed() && outputStream!=null){
                                 outputStream.write( str.getBytes("utf-8"));    //字节流数组写入
                                 outputStream.flush();
+                                bit_send_size+=length;
+//                                if(lastupTime==0) lastupTime=currentTime;
+//                                else{
+//                                    double kb_size=8.0*length/2000;
+//                                    double  time_interval=(currentTime-lastTime)/1000;
+//                                    int upbps=(int)kb_size/(int)time_interval;
+//                                }
                             }
                         } catch (IOException e) { //  e.printStackTrace();
                         }
@@ -459,6 +513,24 @@ public class DataService extends Service {
         intent.putExtra("data",data);
         Log.e(TAG,"广播数据包：");
         sendBroadcast(intent);
+    }
+    protected void sendSpeedBroadcast(){
+        double[] spd=calculate_speed();
+        double downSpd=spd[0];
+        double upSpd=spd[1];
+        if(callBack!=null){
+            callBack.onSpeedChanged(upSpd,downSpd);
+        }
+    }
+    private  double[] calculate_speed(){
+        double[] spd=new double[2];
+        double bps=(double)bit_get_size/5000;
+        double up_bps=(double)bit_send_size/5000;
+        bit_get_size=0;
+        bit_send_size=0;
+        spd[0]=bps;
+        spd[1]=up_bps;
+        return spd;
     }
     public class myReceiver extends BroadcastReceiver {
         @Override

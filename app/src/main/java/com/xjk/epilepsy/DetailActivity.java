@@ -27,9 +27,13 @@ import android.os.IBinder;
 import android.os.Message;
 import android.os.SystemClock;
 import android.util.Log;
+import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.RadioGroup;
+import android.widget.TextView;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Vector;
@@ -63,6 +67,10 @@ public class DetailActivity extends FragmentActivity {
     private DataService.MyBinder myBinder;  //代理人
     private com.suke.widget.SwitchButton switchButton;
     private MyConn conn;
+    private TextView upload_spd;
+    private TextView download_spd;
+    private TextView power_text;
+    private ImageView power_img;
     private void doRegusterReceiver(){
         mDataReceiver=new ContentReceiver();
         IntentFilter filter= new IntentFilter("com.xjk.servicecallback.content");
@@ -97,6 +105,33 @@ public class DetailActivity extends FragmentActivity {
                         btn_socket.setBackground(getDrawable(R.drawable.circle_red));
                     }
                 }
+
+                @Override
+                public void onSpeedChanged(double up_Spd, double down_Spd) {
+                    BigDecimal up=new BigDecimal(up_Spd);
+                    BigDecimal down=new BigDecimal(down_Spd);
+                    double ups=up.setScale(2,BigDecimal.ROUND_HALF_UP).doubleValue();
+                    double downs=down.setScale(2,BigDecimal.ROUND_HALF_UP).doubleValue();
+                    upload_spd.setText(String.valueOf(ups)+" k/s");
+                    download_spd.setText(String.valueOf(downs)+" k/s");
+
+                }
+
+                @Override
+                public void onPowerChanged(int power) {
+                    power_text.setText(String.valueOf(power)+"%");
+                    if(80<=power&&100>=power){
+                        power_img.setImageResource(R.mipmap.power5);
+                    }else if(60<=power&&80>=power){
+                        power_img.setImageResource(R.mipmap.power4);
+                    }else if(40<=power&&60>=power){
+                        power_img.setImageResource(R.mipmap.power2);
+                    }else if(20<=power&&40>=power){
+                        power_img.setImageResource(R.mipmap.power1);
+                    }else{
+                        power_img.setImageResource(R.mipmap.power0);
+                    }
+                }
             });
         }
         //当服务失去连接时调用的方法
@@ -104,6 +139,7 @@ public class DetailActivity extends FragmentActivity {
         public void onServiceDisconnected(ComponentName componentName) {
             service=null;
         }
+
     };
 
     /**
@@ -206,6 +242,7 @@ public class DetailActivity extends FragmentActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        this.getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_detail);
         dataBuff=new StringBuffer();
         purePointBuff=new StringBuffer();
@@ -330,15 +367,18 @@ public class DetailActivity extends FragmentActivity {
 
     private void initView() {
         mRg_main = (RadioGroup) findViewById(R.id.rg_main);
+        upload_spd=(TextView) findViewById(R.id.text_upspd);
+        download_spd=(TextView) findViewById(R.id.text_downspd);
+
+        power_img=(ImageView)findViewById(R.id.img_power);
+        power_text=(TextView)findViewById(R.id.text_power);
     }
 
     @Override
     protected void onDestroy() {
-        super.onDestroy();
-
         unregisterReceiver(mDataReceiver);
         unbindService(conn);
-
+        super.onDestroy();
     }
     public void onBackPressed() {
         final android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
@@ -349,7 +389,9 @@ public class DetailActivity extends FragmentActivity {
             public void onClick(DialogInterface dialogInterface, int i) {
                 myBinder.disconnectSoc();
                 myBinder.disconnectDev();
-                mThreadPool.shutdown();
+                try {
+                    mThreadPool.shutdown();
+                }catch (Exception e){}
                 DetailActivity.this.setResult(99);
                 DetailActivity.this.finish();
             }
@@ -369,8 +411,9 @@ public class DetailActivity extends FragmentActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             String temp=intent.getStringExtra("data");
+            if(temp==null) return;
             dataBuff.append(temp);
-            Log.i(TAG,"缓冲区添加数据，缓冲区长度为："+String.valueOf(dataBuff.length()));
+
         }
     };
 }

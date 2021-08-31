@@ -6,6 +6,13 @@ import java.util.List;
 import java.util.Vector;
 
 public class StringParse {
+    public  static  final int string2power(String data){
+        Long longstr=Long.parseLong(data,16);
+        int num=new Integer(longstr.intValue());
+        double value=(double)(num)*3.3*2/4095;
+        double ans=(value-3.3)*100/0.9;
+        return (int)ans;
+    }
     public static final Vector<Vector<Double>> string2Point(String data) {
         if(data.length()<264)
         {
@@ -129,6 +136,7 @@ public class StringParse {
         return value;
 
     }
+
     private static String strTo16(String s) {
         String str = "";
         for (int i = 0; i < s.length(); i++) {
